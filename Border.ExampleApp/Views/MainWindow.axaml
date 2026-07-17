@@ -7,26 +7,81 @@
         x:Class="Border.ExampleApp.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="Border.ExampleApp">
+        Title="Border.ExampleApp"
+        Classes.dark="{Binding #DarkThemeRadioButton.IsChecked}">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
+    <Window.Styles>
+        <Style Selector="Window.dark">
+          <Setter Property="RequestedThemeVariant" Value="Dark"/>
+        </Style>
+        <Style Selector="Window:not(.dark)">
+          <Setter Property="RequestedThemeVariant" Value="Light"/>
+        </Style>
+    </Window.Styles>
 
-    <Border
-        VerticalAlignment="Center"
-        HorizontalAlignment="Center"
-        BorderThickness="5"
-        BorderBrush="Orange"
-        Background="LightBlue"
-        CornerRadius="15 10"
-        BoxShadow="10 5 10 0 DarkOrange"
+    <Grid ColumnDefinitions="*, auto">
+        
+        <Border
+            Grid.Column="0"
+            VerticalAlignment="Center"
+            HorizontalAlignment="Center"
+            BorderThickness="{Binding #BorderThicknessNumericUpDown.Value, Converter={StaticResource DecimalToThicknessConverter}}"
+            BorderBrush="Orange"
+            Background="LightBlue"
+            CornerRadius="{Binding #CornerRadiusMaskedTextBox.Text, Converter={StaticResource StringToCornerRadiusConverter}}"
+            BoxShadow="10 5 10 0 DarkOrange"
+            Padding="12"
         >
-        <TextBox Text="{Binding Greeting}"
+        <!--
+        BoxShadow rules:
+        - BoxShadow="offsetX offsetY blurRadius spreadRadius color"
+        
+        -->
+
+        <TextBox Text="Normal Border"
                  BorderThickness="0"
+				 IsReadOnly="True"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center" />
     </Border>
+
+        <!--Border Settings-->
+        <StackPanel Grid.Column="1">
+
+            <TextBlock Text="Border Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10" />
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Theme Variant:" />
+                <RadioButton x:Name="LightThemeRadioButton" Content="Light" GroupName="ThemeVariant" IsChecked="True"/>
+                <RadioButton x:Name="DarkThemeRadioButton" Content="Dark" GroupName="ThemeVariant" Margin="10,0,0,0" />
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Text="Border Thickness:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <NumericUpDown x:Name="BorderThicknessNumericUpDown" 
+                               Increment="0.1" FormatString="F1"
+                               Minimum="0" Maximum="20" Value="5"  AllowSpin="True" Width="150" />
+            </StackPanel>
+            <StackPanel Orientation="Vertical" Margin="0, 0, 0, 5">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Corner Radius:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                    <ComboBox x:Name="CornerRadiusMaskSelector" SelectedIndex="1">
+                        <x:String>00</x:String>
+                        <x:String>00 00</x:String>
+                        <x:String>00 00 00 00</x:String>
+                    </ComboBox>
+
+                </StackPanel>
+                <MaskedTextBox x:Name="CornerRadiusMaskedTextBox" Margin="0,5,0,0"
+                               Mask="{Binding #CornerRadiusMaskSelector.SelectedItem}" Text="00 00" MinWidth="150" TextAlignment="Center"/>
+            </StackPanel>
+
+        </StackPanel>
+    </Grid>
+
+    
 </Window>
