@@ -55,9 +55,15 @@
 
             <TextBlock Text="Border Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,10" />
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Theme Variant:" />
+                <StackPanel.Styles>
+                    <Style Selector="RadioButton">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Margin" Value="5 0"/>
+                    </Style>
+                </StackPanel.Styles>
+                <TextBlock Text="Theme Variant:" VerticalAlignment="Center"/>
                 <RadioButton x:Name="LightThemeRadioButton" Content="Light" GroupName="ThemeVariant" IsChecked="True"/>
-                <RadioButton x:Name="DarkThemeRadioButton" Content="Dark" GroupName="ThemeVariant" Margin="10,0,0,0" />
+                <RadioButton x:Name="DarkThemeRadioButton" Content="Dark" GroupName="ThemeVariant" />
             </StackPanel>
             
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
