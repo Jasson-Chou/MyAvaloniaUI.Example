@@ -31,8 +31,8 @@
             VerticalAlignment="Center"
             HorizontalAlignment="Center"
             BorderThickness="{Binding #BorderThicknessNumericUpDown.Value, Converter={StaticResource DecimalToThicknessConverter}}"
-            BorderBrush="Orange"
-            Background="LightBlue"
+            BorderBrush="{Binding #BorderColorPicker.Color, Converter={StaticResource ColorToBrushConverter}}"
+            Background="{Binding #BorderBackgroundColorPicker.Color, Converter={StaticResource ColorToBrushConverter}}"
             CornerRadius="{Binding #CornerRadiusMaskedTextBox.Text, Converter={StaticResource StringToCornerRadiusConverter}}"
             BoxShadow="10 5 10 0 DarkOrange"
             Padding="12"
@@ -75,6 +75,7 @@
             <StackPanel Orientation="Vertical" Margin="0, 0, 0, 5">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Corner Radius:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                    
                     <ComboBox x:Name="CornerRadiusMaskSelector" SelectedIndex="1">
                         <x:String>00</x:String>
                         <x:String>00 00</x:String>
@@ -84,6 +85,30 @@
                 </StackPanel>
                 <MaskedTextBox x:Name="CornerRadiusMaskedTextBox" Margin="0,5,0,0"
                                Mask="{Binding #CornerRadiusMaskSelector.SelectedItem}" Text="00 00" MinWidth="150" TextAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Border Color:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <ColorPicker x:Name="BorderColorPicker"
+                    Color="Orange"
+                    IsAlphaEnabled="True"
+                    IsColorSpectrumVisible="True"
+                    IsColorPaletteVisible="True"
+                    IsColorComponentsVisible="True"
+                    IsColorPreviewVisible="True"
+                    IsColorModelVisible="True" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Background Color:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <ColorPicker x:Name="BorderBackgroundColorPicker"
+                    Color="White"
+                    IsAlphaEnabled="True"
+                    IsColorSpectrumVisible="True"
+                    IsColorPaletteVisible="True"
+                    IsColorComponentsVisible="True"
+                    IsColorPreviewVisible="True"
+                    IsColorModelVisible="True" />
             </StackPanel>
 
         </StackPanel>
