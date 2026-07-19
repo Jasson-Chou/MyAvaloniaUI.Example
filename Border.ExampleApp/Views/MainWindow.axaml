@@ -22,6 +22,10 @@
         <Style Selector="Window:not(.dark)">
           <Setter Property="RequestedThemeVariant" Value="Light"/>
         </Style>
+        <Style Selector="TextBlock.primary">
+            <Setter Property="Width" Value="120"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
     </Window.Styles>
 
     <Grid ColumnDefinitions="*, auto">
@@ -30,12 +34,13 @@
             Grid.Column="0"
             VerticalAlignment="Center"
             HorizontalAlignment="Center"
+            Padding="{Binding #BorderPaddingTextBox.Text, Converter={StaticResource StringToThicknessConverter}}"
+            Margin="{Binding #BorderMarginTextBox.Text, Converter={StaticResource StringToThicknessConverter}}"
             BorderThickness="{Binding #BorderThicknessNumericUpDown.Value, Converter={StaticResource DecimalToThicknessConverter}}"
             BorderBrush="{Binding #BorderColorPicker.Color, Converter={StaticResource ColorToBrushConverter}}"
             Background="{Binding #BorderBackgroundColorPicker.Color, Converter={StaticResource ColorToBrushConverter}}"
             CornerRadius="{Binding #CornerRadiusMaskedTextBox.Text, Converter={StaticResource StringToCornerRadiusConverter}}"
             BoxShadow="{Binding #BoxShadowTextBox.Text, Converter={StaticResource StringToBoxShadowsConverter}}"
-            Padding="12"
         >
             <!--
             BoxShadow rules:
@@ -61,20 +66,30 @@
                         <Setter Property="Margin" Value="5 0"/>
                     </Style>
                 </StackPanel.Styles>
-                <TextBlock Text="Theme Variant:" VerticalAlignment="Center"/>
+                <TextBlock Text="Theme Variant:" Classes="primary" VerticalAlignment="Center"/>
                 <RadioButton x:Name="LightThemeRadioButton" Content="Light" GroupName="ThemeVariant" IsChecked="True"/>
                 <RadioButton x:Name="DarkThemeRadioButton" Content="Dark" GroupName="ThemeVariant" />
             </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Classes="primary" Text="Margin:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <TextBox x:Name="BorderMarginTextBox" TextAlignment="Center" Text="12" Width="150" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Classes="primary" Text="Padding:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <TextBox x:Name="BorderPaddingTextBox" TextAlignment="Center" Text="12" Width="150" />
+            </StackPanel>
             
             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Text="Border Thickness:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <TextBlock Classes="primary" Text="Border Thickness:" VerticalAlignment="Center" Margin="0,0,5,0" />
                 <NumericUpDown x:Name="BorderThicknessNumericUpDown" 
                                Increment="0.1" FormatString="F1"
                                Minimum="0" Maximum="20" Value="5"  AllowSpin="True" Width="150" />
             </StackPanel>
             <StackPanel Orientation="Vertical" Margin="0, 0, 0, 5">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Corner Radius:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                    <TextBlock Classes="primary" Text="Corner Radius:" VerticalAlignment="Center" Margin="0,0,5,0" />
                     
                     <ComboBox x:Name="CornerRadiusMaskSelector" SelectedIndex="1">
                         <x:String>00</x:String>
@@ -88,7 +103,7 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Border Color:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <TextBlock Classes="primary" Text="Border Color:" VerticalAlignment="Center" Margin="0,0,5,0" />
                 <ColorPicker x:Name="BorderColorPicker"
                     Color="Orange"
                     IsAlphaEnabled="True"
@@ -100,7 +115,7 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Background Color:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <TextBlock Classes="primary" Text="Background Color:" VerticalAlignment="Center" Margin="0,0,5,0" />
                 <ColorPicker x:Name="BorderBackgroundColorPicker"
                     Color="White"
                     IsAlphaEnabled="True"
@@ -111,7 +126,7 @@
                     IsColorModelVisible="True" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Box Shadow:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <TextBlock Classes="primary" Text="Box Shadow:" VerticalAlignment="Center" Margin="0,0,5,0" />
                 <TextBox x:Name="BoxShadowTextBox" Text="10 5 10 0 DarkOrange" Margin="5,0,0,0" />
             </StackPanel>
 
