@@ -34,21 +34,21 @@
             BorderBrush="{Binding #BorderColorPicker.Color, Converter={StaticResource ColorToBrushConverter}}"
             Background="{Binding #BorderBackgroundColorPicker.Color, Converter={StaticResource ColorToBrushConverter}}"
             CornerRadius="{Binding #CornerRadiusMaskedTextBox.Text, Converter={StaticResource StringToCornerRadiusConverter}}"
-            BoxShadow="10 5 10 0 DarkOrange"
+            BoxShadow="{Binding #BoxShadowTextBox.Text, Converter={StaticResource StringToBoxShadowsConverter}}"
             Padding="12"
         >
-        <!--
-        BoxShadow rules:
-        - BoxShadow="offsetX offsetY blurRadius spreadRadius color"
+            <!--
+            BoxShadow rules:
+            - BoxShadow="offsetX offsetY blurRadius spreadRadius color"
         
-        -->
+            -->
 
-        <TextBox Text="Normal Border"
-                 BorderThickness="0"
-				 IsReadOnly="True"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center" />
-    </Border>
+            <TextBox Text="Normal Border"
+                     BorderThickness="0"
+				     IsReadOnly="True"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center" />
+        </Border>
 
         <!--Border Settings-->
         <StackPanel Grid.Column="1">
@@ -109,6 +109,10 @@
                     IsColorComponentsVisible="True"
                     IsColorPreviewVisible="True"
                     IsColorModelVisible="True" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Box Shadow:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <TextBox x:Name="BoxShadowTextBox" Text="10 5 10 0 DarkOrange" Margin="5,0,0,0" />
             </StackPanel>
 
         </StackPanel>

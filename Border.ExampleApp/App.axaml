@@ -9,6 +9,7 @@
     <Application.Resources>
         <cusconv:DecimalToThicknessConverters x:Key="DecimalToThicknessConverter" />
         <cusconv:StringToCornerRadiusConverters x:Key="StringToCornerRadiusConverter" />
+        <cusconv:StringToBoxShadowsConverters x:Key="StringToBoxShadowsConverter" />
 
         <converters:ColorToBrushConverter x:Key="ColorToBrushConverter" />
     </Application.Resources>
