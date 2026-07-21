@@ -156,7 +156,7 @@
             <StackPanel Orientation="Horizontal">
                 <Button Content="Save" Command="{Binding SaveBorderSettingCommand}"/>
                 <Button Content="Load" Command="{Binding LoadBorderSettingCommand}"/>
-                <Button Content="Gen Code(.axaml)" Command="{Binding GenCodeAxamlCommand}"/>
+                <Button Content="Copy Code(.axaml)" Command="{Binding CopyCodeAxamlCommand}"/>
             </StackPanel>
 
         </StackPanel>

@@ -36,7 +36,6 @@ namespace Border.ExampleApp.ViewModels
                     Name = $"Design Test {i + 1}",
                 });
             }
-
         }
 
         [ObservableProperty]
@@ -75,11 +74,12 @@ namespace Border.ExampleApp.ViewModels
                 }
                 else
                 {
-                    firstItem = new BorderSettingViewModel(BorderSetting.GetBorderSetting());
+
+                    firstItem = BorderSetting.Clone();
                     BorderSettings.Add(firstItem);
                 }
                 firstItem.Name = result;
-                await _borderSettingService.SaveAsync(SaveFileName, BorderSettings.Select(item => item.GetBorderSetting()));
+                await _borderSettingService.SaveAsync(SaveFileName, BorderSettings.Select(item => item.ToBorderSetting()));
             }
             else
             {
@@ -91,7 +91,8 @@ namespace Border.ExampleApp.ViewModels
         [RelayCommand]
         private async Task LoadBorderSetting()
         {
-            BorderSettings.Clear();
+            TaskScheduler uiScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+            
             await _borderSettingService.LoadAsync(SaveFileName).ContinueWith(task =>
             {
                 if (task.Exception is not null)
@@ -100,26 +101,26 @@ namespace Border.ExampleApp.ViewModels
                     return;
                 }
                 var settings = task.Result;
+                
                 BorderSettings.Clear();
                 foreach (var setting in settings)
                 {
-                    BorderSettings.Add(new BorderSettingViewModel(setting));
+                    BorderSettings.Add(setting.ToViewModel());
                 }
-            });
-            
+            }, uiScheduler);
 
         }
 
         [RelayCommand]
-        private async Task GenCodeAxaml()
+        private async Task CopyCodeAxaml()
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"Margin=\"{BorderSetting.Margin}\"");
             sb.AppendLine($"Padding=\"{BorderSetting.Padding}\"");
-            sb.AppendLine($"Thickness=\"{BorderSetting.Thickness}\"");
+            sb.AppendLine($"BorderThickness=\"{BorderSetting.Thickness}\"");
             sb.AppendLine($"CornerRadius=\"{BorderSetting.CornerRadius}\"");
-            sb.AppendLine($"BorderColor=\"{BorderSetting.BorderColor}\"");
-            sb.AppendLine($"BackgroundColor=\"{BorderSetting.BackgroundColor}\"");
+            sb.AppendLine($"BorderBrush=\"{BorderSetting.BorderColor}\"");
+            sb.AppendLine($"Background=\"{BorderSetting.BackgroundColor}\"");
             sb.AppendLine($"BoxShadow=\"{BorderSetting.BoxShadow}\"");
             await _clipboardService.SetTextAsync(sb.ToString());
             await _dialogService.ShowInfoDialog("Copied to clipboard" + Environment.NewLine + sb.ToString(), "Axaml Code");
@@ -134,48 +135,6 @@ namespace Border.ExampleApp.ViewModels
         public BorderSettingViewModel()
         {
 
-        }
-
-        public BorderSettingViewModel(BorderSetting setting)
-        {
-            _name = setting.Name;
-            _nameTextColor = Color.Parse(setting.NameTextColor);
-            _margin = setting.Margin;
-            _padding = setting.Padding;
-            _thickness = setting.Thickness;
-            _cornerRadius = setting.CornerRadius;
-            _borderColor = Color.Parse(setting.BorderColor);
-            _backgroundColor = Color.Parse(setting.BackgroundColor);
-            _boxShadow = setting.BoxShadow;
-        }
-
-        public void CopyFrom(BorderSettingViewModel other)
-        {
-            Name = other.Name;
-            NameTextColor = other.NameTextColor;
-            Margin = other.Margin;
-            Padding = other.Padding;
-            Thickness = other.Thickness;
-            CornerRadius = other.CornerRadius;
-            BorderColor = other.BorderColor;
-            BackgroundColor = other.BackgroundColor;
-            BoxShadow = other.BoxShadow;
-        }
-
-        public BorderSetting GetBorderSetting()
-        {
-            return new BorderSetting
-            {
-                Name = Name,
-                NameTextColor = NameTextColor.ToString(),
-                Margin = Margin,
-                Padding = Padding,
-                Thickness = Thickness,
-                CornerRadius = CornerRadius,
-                BorderColor = BorderColor.ToString(),
-                BackgroundColor = BackgroundColor.ToString(),
-                BoxShadow = BoxShadow
-            };
         }
 
 
@@ -205,5 +164,99 @@ namespace Border.ExampleApp.ViewModels
 
         [ObservableProperty]
         private string _boxShadow = "10 5 10 0 DarkOrange";
+    }
+
+    public static class BorderSettingViewModelExtension
+    {
+        public static BorderSettingViewModel CopyFrom(this BorderSettingViewModel source, BorderSettingViewModel other)
+        {
+            source.Name = other.Name;
+            source.NameTextColor = other.NameTextColor;
+            source.Margin = other.Margin;
+            source.Padding = other.Padding;
+            source.Thickness = other.Thickness;
+            source.CornerRadius = other.CornerRadius;
+            source.BorderColor = other.BorderColor;
+            source.BackgroundColor = other.BackgroundColor;
+            source.BoxShadow = other.BoxShadow;
+            return source;
+        }
+
+        public static BorderSettingViewModel CopyFrom(this BorderSettingViewModel source, BorderSetting other)
+        {
+            source.Name = other.Name;
+            source.NameTextColor = DeserializeColor(other.NameTextColor);
+            source.Margin = other.Margin;
+            source.Padding = other.Padding;
+            source.Thickness = other.Thickness;
+            source.CornerRadius = other.CornerRadius;
+            source.BorderColor = DeserializeColor(other.BorderColor);
+            source.BackgroundColor = DeserializeColor(other.BackgroundColor);
+            source.BoxShadow = other.BoxShadow;
+            return source;
+        }
+
+        public static BorderSettingViewModel Clone(this BorderSettingViewModel source)
+        {
+            return new BorderSettingViewModel
+            {
+                Name = source.Name,
+                NameTextColor = source.NameTextColor,
+                Margin = source.Margin,
+                Padding = source.Padding,
+                Thickness = source.Thickness,
+                CornerRadius = source.CornerRadius,
+                BorderColor = source.BorderColor,
+                BackgroundColor = source.BackgroundColor,
+                BoxShadow = source.BoxShadow
+            };
+        }
+
+        public static BorderSetting ToBorderSetting(this BorderSettingViewModel source)
+        {
+            return new BorderSetting
+            {
+                Name = source.Name,
+                NameTextColor = SerializeColor(source.NameTextColor),
+                Margin = source.Margin,
+                Padding = source.Padding,
+                Thickness = source.Thickness,
+                CornerRadius = source.CornerRadius,
+                BorderColor = SerializeColor(source.BorderColor),
+                BackgroundColor = SerializeColor(source.BackgroundColor),
+                BoxShadow = source.BoxShadow
+            };
+        }
+
+        public static BorderSettingViewModel ToViewModel(this BorderSetting source)
+        {
+            return new BorderSettingViewModel
+            {
+                Name = source.Name,
+                NameTextColor = DeserializeColor(source.NameTextColor),
+                Margin = source.Margin,
+                Padding = source.Padding,
+                Thickness = source.Thickness,
+                CornerRadius = source.CornerRadius,
+                BorderColor = DeserializeColor(source.BorderColor),
+                BackgroundColor = DeserializeColor(source.BackgroundColor),
+                BoxShadow = source.BoxShadow
+            };
+        }
+
+        private static Color DeserializeColor(string colorString)
+        {
+            if(Color.TryParse(colorString, out Color color))
+            {
+                return color;
+            }
+
+            return Color.Parse("Black");
+        }
+
+        private static string SerializeColor(Color color)
+        {
+            return $"#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
     }
 }
