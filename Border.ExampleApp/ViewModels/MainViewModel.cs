@@ -24,6 +24,7 @@ namespace Border.ExampleApp.ViewModels
             _dialogService = dialogService;
             _borderSettingService = borderSettingService;
             _clipboardService = clipboardService;
+            Initialize().ConfigureAwait(false);
         }
 
         public MainViewModel() : this(null!, null!, null!)
@@ -56,6 +57,11 @@ namespace Border.ExampleApp.ViewModels
             {
                 BorderSetting.CopyFrom(value);
             }
+        }
+
+        private async Task Initialize()
+        {
+            await LoadBorderSetting();
         }
 
 
@@ -123,7 +129,7 @@ namespace Border.ExampleApp.ViewModels
             sb.AppendLine($"Background=\"{BorderSetting.BackgroundColor}\"");
             sb.AppendLine($"BoxShadow=\"{BorderSetting.BoxShadow}\"");
             await _clipboardService.SetTextAsync(sb.ToString());
-            await _dialogService.ShowInfoDialog("Copied to clipboard" + Environment.NewLine + sb.ToString(), "Axaml Code");
+            await _dialogService.ShowInfoDialog("Copied to clipboard." + Environment.NewLine + sb.ToString(), "Axaml Code");
         }
 
     }
