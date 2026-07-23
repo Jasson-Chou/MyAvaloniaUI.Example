@@ -23,7 +23,8 @@
 
         <ScrollBar x:Name="xOffsetScrollBar" Grid.Row="1" Orientation="Horizontal" Minimum="0.0" Maximum="{Binding #DrawLineControl.MaxXOffset}" Value="0.0" />
         <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <Slider x:Name="xScaleSlider" Width="100" Minimum="1.0" Maximum="10" Value="1.0" />
+            <Slider x:Name="xScaleSlider" Width="200" Minimum="1.0" Maximum="100" Value="1.0" />
+            <TextBlock Text="{Binding #xScaleSlider.Value}" TextAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Center"/>
         </StackPanel>
     </Grid>
 

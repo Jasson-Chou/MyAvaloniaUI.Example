@@ -60,8 +60,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             base.OnPropertyChanged(change);
             if(change.Property == XScaleProperty)
             {
-                float xStep = (float)ScopeWidth / _values.Length * XScale; // 計算每個資料點的寬度
-                MaxXOffset = Math.Max(0.0f, _values.Length * xStep - (float)ScopeWidth); // 計算新的最大 XOffset
+                double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
+                float xStep = (float)(ScopeWidth * XScale * scaling / (_values.Length - 1)); // 計算每個資料點的寬度
+                MaxXOffset = Math.Max(0.0f, (_values.Length - 1) * xStep - (float)ScopeWidth); // 計算新的最大 XOffset
                 CoerceValue(XOffsetProperty); // 重新計算 XOffset 的值，確保它在新的範圍內 [呼叫'coerce']
             }
         }
@@ -165,7 +166,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             SKPoint[] points = BuildSKPoints(_values, 
                 (float)YLableWith, (float)0,
                 (float)ScopeWidth, (float)boundHeight, 
-                MaxValue, MinValue, scaling, XOffset, XScale, YScale);
+                MaxValue, MinValue, scaling, XOffset, MaxXOffset, XScale, YScale);
 
 
             var scopeRect = new Rect(YLableWith, 0, ScopeWidth, boundHeight);
@@ -174,79 +175,76 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         }
 
         private static SKPoint[] BuildSKPoints(ReadOnlySpan<float> values, float left, float top, float width, float higth,
-            float maxValue, float minValue, double renderScaling, float xOffset= 0.0f, float xScale = 1.0f, float yScale = 1.0f)
+            float maxValue, float minValue, double renderScaling, float xOffset= 0.0f, float maxXOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
         {
             int n = values.Length;
             if (n == 0) return Array.Empty<SKPoint>();
 
-            float _dx = width / (n - 1) * xScale; // 每個資料點的寬度
-            int drawN = (int)(width / _dx) + 1; // 計算需要的資料點數
-            int startN = (int)(xOffset / _dx); // 計算起始資料點的索引
-
-            int columns = Math.Max(1, (int)(width * renderScaling)); // 畫面寬度(DIP * 渲染縮放) => 需要的點數
-            float xStep = width / columns; // 每個column的寬度
+            int canShowColumns = (int)Math.Ceiling(width * renderScaling);
+            float xStep = (float)(width * xScale * renderScaling / (n - 1)); // 計算每個資料點的寬度
             float yRange = maxValue - minValue;
-            float ScaleY(float v) => (1f - (v - minValue) / yRange) * higth; // 將值轉換為畫面高度的比例
+            float yScaleFactor = (yRange != 0) ? (higth / yRange) * yScale : 1.0f; // 計算 Y 軸縮放因子
+            float getYValue(float value) => top + (maxValue - value) * yScaleFactor; // 計算 Y 軸座標
 
-            if (drawN <= columns * 2)
+            int startIndex = xOffset > 0 ? (int)(xOffset / xStep) : 0;
+            int destCount = (int)(canShowColumns / xStep);
+
+            if(destCount <= canShowColumns * 2)
             {
-                // 如果資料點數小於等於需要的點數，直接轉換為SKPoint
-                var points = new SKPoint[drawN];
-                float dx = width / (drawN - 1) * xScale; // 每個資料點的寬度
-
-                int _dbgMinYIdx = -1;
-                float _dbgMinYValue = float.MaxValue;
-
-                for (int i = 0; i < drawN; i++)
+                SKPoint[] sKPoints = new SKPoint[destCount];
+                float x = left;
+                for(int i = 0; i < destCount; i++)
                 {
-                    int yIndex = i + startN;
-                    float yValue = ScaleY(values[yIndex]) * yScale + top;
-
-                    if (yValue < _dbgMinYValue)
-                    {
-                        _dbgMinYValue = yValue;
-                        _dbgMinYIdx = yIndex;
-                    }
-                    points[i] = new SKPoint(i * dx  + left - 500, yValue);
+                    int valueIndex = startIndex + i;
+                    float y = getYValue(values[valueIndex]);
+                    sKPoints[i] = new SKPoint(x, y);
+                    x += xStep;
                 }
-                Debug.WriteLine($"Min Y Value: {_dbgMinYValue}, Min Y Index: {_dbgMinYIdx}");
-                return points;
+                return sKPoints;
             }
             else
             {
-                // 如果資料點數大於需要的點數，降採樣
-                var points = new SKPoint[columns * 2];
-                int pIdx = 0;
-                for (int i = 0; i < columns; i++)
+                // 採樣顯示，避免過多的點數
+                int sampleRate = (int)Math.Ceiling((double)destCount / canShowColumns);
+                SKPoint[] sKPoints = new SKPoint[canShowColumns * 2];
+                int sKPointIdx = 0;
+                for (int i = 0; i < canShowColumns; i++)
                 {
-                    // 計算每個column的資料範圍
-                    int lo = (int)((long)i * n / columns);
-                    int hi = (int)((long)(i + 1) * n / columns);
-                    if (hi >= n) hi = n - 1;
-                    // TODO: 處理降採樣邏輯
-                    float min = values[lo], max = values[hi];
-                    for(int j = lo; j < hi; j++)
+                    int cLIdx = Math.Min(startIndex + (i * sampleRate), n - 1);
+                    int cHIdx = Math.Min(cLIdx + sampleRate - 1, n - 1);
+
+                    float cLValue = values[cLIdx];
+                    float cHValue = values[cHIdx];
+
+                    for(int j = cLIdx; j <= cHIdx; j++)
                     {
-                        float v = values[j];
-                        if (v < min) { min = v; lo = j; }
-                        if (v > max) { max = v; hi = j; }
+                        if(cLValue > values[j])
+                        {
+                            cLValue = values[j];
+                            cLIdx = j;
+                        }
+
+                        if(cHValue < values[j])
+                        {
+                            cHValue = values[j];
+                            cHIdx = j;
+                        }
                     }
-                    float x = i * xStep * xScale + left - xOffset;
-                    // 處理順序問題
-                    if (min <= max)
+
+                    if (cLIdx < cHIdx)
                     {
-                        points[pIdx++] = new SKPoint(x, ScaleY(min) * yScale + top);
-                        points[pIdx++] = new SKPoint(x, ScaleY(max) * yScale + top);
+                        sKPoints[sKPointIdx++] = new SKPoint(left + (cLIdx * xStep), getYValue(cLValue));
+                        sKPoints[sKPointIdx++] = new SKPoint(left + (cHIdx * xStep), getYValue(cHValue));
                     }
                     else
                     {
-                        points[pIdx++] = new SKPoint(x, ScaleY(max) * yScale + top);
-                        points[pIdx++] = new SKPoint(x, ScaleY(min) * yScale + top);
+                        sKPoints[sKPointIdx++] = new SKPoint(left + (cHIdx * xStep), getYValue(cHValue));
+                        sKPoints[sKPointIdx++] = new SKPoint(left + (cLIdx * xStep), getYValue(cLValue));
                     }
 
                 }
-                return points;
 
+                return sKPoints;
             }
         }
 
