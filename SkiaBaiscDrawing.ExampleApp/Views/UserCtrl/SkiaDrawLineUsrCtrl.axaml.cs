@@ -15,6 +15,14 @@ public partial class SkiaDrawLineUsrCtrl : UserControl
     private float[] _values = Array.Empty<float>();
     private int _version;
 
+    public static readonly StyledProperty<float> MinValueProperty =
+        AvaloniaProperty.Register<SkiaDrawLineUsrCtrl, float>(
+            nameof(MinValue), float.MaxValue);
+
+    public static readonly StyledProperty<float> MaxValueProperty =
+        AvaloniaProperty.Register<SkiaDrawLineUsrCtrl, float>(
+            nameof(MaxValue), float.MinValue);
+
     public static readonly StyledProperty<Color> LineColorProperty =
         AvaloniaProperty.Register<SkiaDrawLineUsrCtrl, Color>(
             nameof(LineColor), Colors.DeepSkyBlue);
@@ -23,6 +31,17 @@ public partial class SkiaDrawLineUsrCtrl : UserControl
         AvaloniaProperty.Register<SkiaDrawLineUsrCtrl, double>(
             nameof(StrokeWidth), 1.0);
 
+    public float MinValue
+    {
+        get => GetValue(MinValueProperty);
+        set => SetValue(MinValueProperty, value);
+    }
+
+    public float MaxValue
+    {
+        get => GetValue(MaxValueProperty);
+        set => SetValue(MaxValueProperty, value);
+    }
 
     public Color LineColor
     {
@@ -55,10 +74,11 @@ public partial class SkiaDrawLineUsrCtrl : UserControl
         float x = 0;
         for (int i = 0; i < _values.Length; i++)
         {
-            skPoints[i] = new SKPoint(x, _values[i]);
+            skPoints[i] = new SKPoint(x, (_values[i] - MinValue) / (MaxValue - MinValue) * (float)Bounds.Height);
             x += step;
         }
-        context.Custom(new DrawLineOp(new Rect(Bounds.Size), skPoints, _version, LineColor.ToSKColor(), (float)StrokeWidth));
+        var drawLineOp = new DrawLineOp(new Rect(Bounds.Size), skPoints, _version, LineColor.ToSKColor(), (float)StrokeWidth);
+        context.Custom(drawLineOp);
     }
 
     private sealed class DrawLineOp : ICustomDrawOperation
@@ -103,19 +123,18 @@ public partial class SkiaDrawLineUsrCtrl : UserControl
 
             canvas.Save();
             canvas.ClipRect(new SKRect(0, 0,
-                (float)Bounds.Width, (float)Bounds.Height)); // 防止畫出控制項範圍
+                (float)Bounds.Width, (float)Bounds.Height)); 
 
             using var paint = new SKPaint
             {
                 Color = _color,
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = _strokeWidth,
-                IsAntialias = _pts.Length < 50_000, // 超大量點時關 AA 換速度
+                IsAntialias = _pts.Length < 50_000, 
                 StrokeJoin = SKStrokeJoin.Round,
                 StrokeCap = SKStrokeCap.Round,
             };
-
-            // 關鍵:一次批次呼叫畫完整條折線
+            
             canvas.DrawPoints(SKPointMode.Lines, _pts, paint);
 
             canvas.Restore();

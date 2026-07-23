@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:SkiaBasicDrawing.ExampleApp.ViewModels"
-        xmlns:usrCtrl="using:SkiaBasicDrawing.ExampleApp"
+        xmlns:usrCtrl="using:SkiaBasicDrawing.ExampleApp.Views.UserCtrl"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
@@ -15,9 +15,16 @@
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
+    <Grid RowDefinitions="*, auto, auto">
+        
+        <usrCtrl:SkiaDrawWaveformScopeUsrCtrl x:Name="DrawLineControl" 
+                                              XOffset="{Binding #xOffsetScrollBar.Value}"
+                                              XScale="{Binding #xScaleSlider.Value}" />
 
-    <usrCtrl:SkiaDrawLineUsrCtrl x:Name="DrawLineControl" 
-
-                                 />
+        <ScrollBar x:Name="xOffsetScrollBar" Grid.Row="1" Orientation="Horizontal" Minimum="0.0" Maximum="{Binding #DrawLineControl.MaxXOffset}" Value="0.0" />
+        <StackPanel Grid.Row="2" Orientation="Horizontal">
+            <Slider x:Name="xScaleSlider" Width="100" Minimum="1.0" Maximum="10" Value="1.0" />
+        </StackPanel>
+    </Grid>
 
 </Window>
