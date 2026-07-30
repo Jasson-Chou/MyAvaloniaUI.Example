@@ -45,7 +45,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views
             buffer = new DropOldestQueue<float>(DrawLineControl.PointCount);
 
             _sineGenerator.Reset();
-            _stopwatch.Start();
+            _lastTimeSpan = TimeSpan.Zero;
+            _stopwatch.Restart();
             _dispatcherTimer.Start();
         }
 
@@ -56,10 +57,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views
 
         private void UpdateValues()
         {
-            var spendTime = _stopwatch.Elapsed;
-            var deltaTime = spendTime - _lastTimeSpan;
-            _lastTimeSpan = spendTime;
-            var buff = _sineGenerator.GenerateF(spendTime, deltaTime);
+            var currentTime = _stopwatch.Elapsed;
+            var deltaTime = currentTime - _lastTimeSpan;
+            var buff = _sineGenerator.GenerateF(_lastTimeSpan, deltaTime);
+            _lastTimeSpan = currentTime;
             buffer.EnqueueRange(buff);
             buffer.GetMinMax(out float min, out float max);
             DrawLineControl.MinValue = min;
@@ -69,15 +70,19 @@ namespace SkiaBasicDrawing.ExampleApp.Views
 
         private void stopButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            _stopwatch?.Stop();
-            _dispatcherTimer?.Stop();
+            
 
-            if(_stopwatch is not null)
+            if(_dispatcherTimer is not null && _dispatcherTimer.IsEnabled)
             {
+                _dispatcherTimer.Stop();
+                _dispatcherTimer.Tick -= DispatcherTimer_Tick;
+            }
+            
+            if (_stopwatch is not null)
+            {
+                _stopwatch.Stop();
                 UpdateValues();
             }
-
-            
         }
     }
 }
