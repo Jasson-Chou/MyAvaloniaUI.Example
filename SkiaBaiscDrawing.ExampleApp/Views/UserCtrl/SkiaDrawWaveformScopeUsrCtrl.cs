@@ -17,7 +17,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
     {
 
         private float[] _values = Array.Empty<float>();
-        private int _version;
+        private int _skDrawLineVersion;
 
         public static readonly StyledProperty<float> MinValueProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
@@ -55,6 +55,22 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             AvaloniaProperty.RegisterDirect<SkiaDrawWaveformScopeUsrCtrl, float>(
                 nameof(MaxXOffset), o => o.MaxXOffset);
 
+        public static readonly StyledProperty<float> YOffsetProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
+                nameof(YOffset), 0.0f, coerce: (o, value) =>
+                {
+                    var ctrl = (SkiaDrawWaveformScopeUsrCtrl)o;
+                    return Math.Clamp(value, 0.0f, ctrl.MaxYOffset);
+                });
+
+        public static readonly DirectProperty<SkiaDrawWaveformScopeUsrCtrl, float> MaxYOffsetProperty =
+            AvaloniaProperty.RegisterDirect<SkiaDrawWaveformScopeUsrCtrl, float>(
+                nameof(MaxYOffset), o => o.MaxYOffset);
+
+        public static readonly StyledProperty<int> PointCountProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, int>(
+                nameof(PointCount), 2048);
+
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
@@ -64,6 +80,11 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 float xStep = (float)(ScopeWidth * XScale * scaling / (_values.Length - 1)); // 計算每個資料點的寬度
                 MaxXOffset = Math.Max(0.0f, (_values.Length - 1) * xStep - (float)ScopeWidth); // 計算新的最大 XOffset
                 CoerceValue(XOffsetProperty); // 重新計算 XOffset 的值，確保它在新的範圍內 [呼叫'coerce']
+            }
+            else if(change.Property == YScaleProperty)
+            {
+                MaxYOffset = YScale == 1.0f ? 0.0f : ScopeHeight * YScale - ScopeHeight; // 計算新的最大 YOffset
+                CoerceValue(YOffsetProperty); // 重新計算 YOffset 的值，確保它在新的範圍內 [呼叫'coerce']
             }
         }
 
@@ -116,10 +137,29 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             private set => SetAndRaise(MaxXOffsetProperty, ref _maxXOffset, value);
         }
 
+        public float YOffset
+        {
+            get => GetValue(YOffsetProperty);
+            set => SetValue(YOffsetProperty, value);
+        }
+
+        private float _maxYOffset = 0.0f;
+        public float MaxYOffset
+        {
+            get => _maxYOffset;
+            private set => SetAndRaise(MaxYOffsetProperty, ref _maxYOffset, value);
+        }
+
+        public int PointCount
+        {
+            get => GetValue(PointCountProperty);
+            set => SetValue(PointCountProperty, value);
+        }
+
         public void SetValues(float[] values)
         {
             _values = values;
-            _version++;
+            _skDrawLineVersion++;
             InvalidateVisual();
         }
 
@@ -128,25 +168,27 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             AffectsRender<SkiaDrawWaveformScopeUsrCtrl>(
                 MinValueProperty, MaxValueProperty, 
                 LineColorProperty, StrokeWidthProperty, 
-                XScaleProperty, YScaleProperty, XOffsetProperty);
+                XScaleProperty, YScaleProperty, XOffsetProperty, YOffsetProperty, PointCountProperty);
         }
 
         protected override void OnInitialized()
         {
             base.OnInitialized();
             YLableWith = 100;
+            XLableHeight = 100;
         }
 
         private SkiaPen _skiaPen = null!;
 
         private float YLableWith { get; set; }
+        private float XLableHeight { get; set; }
         private float ScopeWidth => (float)this.Bounds.Width - YLableWith;
+        private float ScopeHeight => (float)this.Bounds.Height - XLableHeight;
 
         public override void Render(DrawingContext context)
         {
             var boundWith = this.Bounds.Width;
             var boundHeight = this.Bounds.Height;
-            Debug.WriteLine($"Bounds {Bounds.ToString()}");
 
             if(_skiaPen is null)
             {
@@ -163,37 +205,53 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
 
-            SKPoint[] points = BuildSKPoints(_values, 
+            if(PointCount > 0 && _values.Length > PointCount)
+            {
+                _values = _values.AsSpan(_values.Length - PointCount).ToArray();
+            }
+
+            SKPoint[] points = BuildSKPoints(_values, PointCount,
                 (float)YLableWith, (float)0,
-                (float)ScopeWidth, (float)boundHeight, 
-                MaxValue, MinValue, scaling, XOffset, MaxXOffset, XScale, YScale);
+                (float)ScopeWidth, (float)ScopeHeight, 
+                MaxValue, MinValue, scaling, XOffset, YOffset, XScale, YScale);
 
 
-            var scopeRect = new Rect(YLableWith, 0, ScopeWidth, boundHeight);
-            context.Custom(new SkiaDrawLine(points, _skiaPen, scopeRect, _version));
+            var scopeRect = new Rect(YLableWith, 0, ScopeWidth, ScopeHeight);
+            context.Custom(new SkiaDrawLine(points, _skiaPen, scopeRect, _skDrawLineVersion));
 
         }
 
-        private static SKPoint[] BuildSKPoints(ReadOnlySpan<float> values, float left, float top, float width, float higth,
-            float maxValue, float minValue, double renderScaling, float xOffset= 0.0f, float maxXOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
+        private static SKPoint[] BuildSKPoints(ReadOnlySpan<float> values, int pointCount, float left, float top, float width, float higth,
+            float maxValue, float minValue, double renderScaling, float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
         {
             int n = values.Length;
             if (n == 0) return Array.Empty<SKPoint>();
-
+            
             int canShowColumns = (int)Math.Ceiling(width * renderScaling);
-            float xStep = (float)(width * xScale * renderScaling / (n - 1)); // 計算每個資料點的寬度
+
             float yRange = maxValue - minValue;
-            float yScaleFactor = (yRange != 0) ? (higth / yRange) * yScale : 1.0f; // 計算 Y 軸縮放因子
-            float getYValue(float value) => top + (maxValue - value) * yScaleFactor; // 計算 Y 軸座標
+            float yScaleFactor = (yRange != 0) ? (higth * yScale / yRange) : 1.0f; // 計算 Y 軸縮放因子
+            float getYValue(float value) => top + (maxValue - value) * yScaleFactor - yOffset; // 計算 Y 軸座標
+
+            float xStep = 0.0f;
+
+            if (pointCount > 0)
+            {
+                xStep = (float)(width * xScale * renderScaling / (pointCount - 1)); // 計算每個資料點的寬度
+            }
+            else
+            {
+                xStep = (float)(width * xScale * renderScaling / (n - 1)); // 計算每個資料點的寬度
+            }
 
             int startIndex = xOffset > 0 ? (int)(xOffset / xStep) : 0;
             int destCount = (int)(canShowColumns / xStep);
 
-            if(destCount <= canShowColumns * 2)
+            if (destCount <= canShowColumns * 2)
             {
                 SKPoint[] sKPoints = new SKPoint[destCount];
                 float x = left;
-                for(int i = 0; i < destCount; i++)
+                for (int i = 0; i < destCount; i++)
                 {
                     int valueIndex = startIndex + i;
                     float y = getYValue(values[valueIndex]);
@@ -204,7 +262,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             }
             else
             {
-                // 採樣顯示，避免過多的點數
+                // 採樣顯示，避免過多的點數 (min-max downsampling)
                 int sampleRate = (int)Math.Ceiling((double)destCount / canShowColumns);
                 SKPoint[] sKPoints = new SKPoint[canShowColumns * 2];
                 int sKPointIdx = 0;
@@ -216,15 +274,15 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     float cLValue = values[cLIdx];
                     float cHValue = values[cHIdx];
 
-                    for(int j = cLIdx; j <= cHIdx; j++)
+                    for (int j = cLIdx; j <= cHIdx; j++)
                     {
-                        if(cLValue > values[j])
+                        if (cLValue > values[j])
                         {
                             cLValue = values[j];
                             cLIdx = j;
                         }
 
-                        if(cHValue < values[j])
+                        if (cHValue < values[j])
                         {
                             cHValue = values[j];
                             cHIdx = j;
@@ -246,6 +304,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 return sKPoints;
             }
+
         }
 
         private class SkiaPen : IDisposable

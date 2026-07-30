@@ -15,17 +15,74 @@
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
-    <Grid RowDefinitions="*, auto, auto">
+    <Window.Styles>
+        <Style Selector="NumericUpDown.primary">
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="2 0.4"/>
+            <Setter Property="Width" Value="120"/>
+            
+        </Style>
+
+        <Style Selector="TextBlock.primary">
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="2 0.4"/>
+        </Style>
+
+        <Style Selector="Button.primary">
+            <Setter Property="Margin" Value="2 1.5"/>
+        </Style>
+
+    </Window.Styles>
+    <Grid RowDefinitions="*, auto, auto" ColumnDefinitions="*, auto, auto">
         
         <usrCtrl:SkiaDrawWaveformScopeUsrCtrl x:Name="DrawLineControl" 
                                               XOffset="{Binding #xOffsetScrollBar.Value}"
-                                              XScale="{Binding #xScaleSlider.Value}" />
+                                              YOffset="{Binding #yOffsetScrollBar.Value}"
+                                              XScale="{Binding #xScaleSlider.Value}"
+                                              YScale="{Binding #yScaleSlider.Value}"
+                                              />
 
         <ScrollBar x:Name="xOffsetScrollBar" Grid.Row="1" Orientation="Horizontal" Minimum="0.0" Maximum="{Binding #DrawLineControl.MaxXOffset}" Value="0.0" />
-        <StackPanel Grid.Row="2" Orientation="Horizontal">
-            <Slider x:Name="xScaleSlider" Width="200" Minimum="1.0" Maximum="100" Value="1.0" />
-            <TextBlock Text="{Binding #xScaleSlider.Value}" TextAlignment="Center" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-        </StackPanel>
+        <ScrollBar x:Name="yOffsetScrollBar" Grid.Column="1" Orientation="Vertical" Minimum="0.0" Maximum="{Binding #DrawLineControl.MaxYOffset}" Value="0.0" />
+        
+
+        <Grid Grid.Row="0" Grid.Column="2" Grid.RowSpan="2"
+              ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto,*">
+            <Grid.Styles>
+                <Style Selector="TextBlock.align">
+                    <Setter Property="Grid.Column" Value="0"/>
+                </Style>
+            </Grid.Styles>
+
+            <TextBlock Text="X Scale:" Grid.Row="0" Classes="primary align"/>
+            <StackPanel                Grid.Row="0" Grid.Column="2" Orientation="Horizontal">
+                <Slider x:Name="xScaleSlider" Width="160" Minimum="1.0" Maximum="100" Value="1.0" />
+                <NumericUpDown Value="{Binding #xScaleSlider.Value}" Classes="primary" FormatString="F2"/>
+            </StackPanel>
+
+            <TextBlock Text="Y Scale:" Grid.Row="1" Classes="primary align"/>
+            <StackPanel                Grid.Row="1" Grid.Column="2" Orientation="Horizontal">
+                <Slider x:Name="yScaleSlider" Width="160" Minimum="1.0" Maximum="100" Value="1.0" />
+                <NumericUpDown Value="{Binding #yScaleSlider.Value}" Classes="primary" FormatString="F2"/>
+            </StackPanel>
+
+            <TextBlock Text="FPS:" Grid.Row="2" Classes="primary align"/>
+            <NumericUpDown x:Name="fpsNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="2" Grid.Column="2" Minimum="1" Maximum="60" Value="60" Classes="primary" FormatString="F0"/>
+
+            <TextBlock Text="Points:" Grid.Row="3" Classes="primary align"/>
+            <NumericUpDown x:Name="pointsNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="3" Grid.Column="2" Minimum="0" Maximum="1000000" Value="1000" Classes="primary" FormatString="F0"/>
+            
+            <StackPanel                Grid.Row="4" Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Click="runButton_Click" Classes="primary"/>
+                <Button x:Name="stopButton" Content="Stop" Width="100" HorizontalContentAlignment="Center" Click="stopButton_Click" Classes="primary"/>
+            </StackPanel>
+            
+        </Grid>
+        
     </Grid>
 
 </Window>
