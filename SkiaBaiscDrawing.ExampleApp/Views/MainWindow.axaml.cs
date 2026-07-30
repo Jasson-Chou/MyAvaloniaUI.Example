@@ -19,19 +19,12 @@ namespace SkiaBasicDrawing.ExampleApp.Views
 
             //const int count = 1000;
             const int count = 50_000;
-            var pts = new float[count];
-            var rnd = new Random();
-            float min = float.MaxValue;
-            float max = float.MinValue;
-            for (int i = 0; i < count; i++)
-            {
-                float y = 150f * MathF.Sin(i * 0.1f)
-                               + (float)(rnd.NextDouble() * 8 - 4)
-                               ;
-                pts[i] = y;
-                if (y < min) min = y;
-                if (y > max) max = y;
-            }
+            float[] pts = new float[count];
+            DropOldestQueue<float> oldestQueue = new DropOldestQueue<float>(count);
+            SineGenerator sine = new SineGenerator(5, sampleRate: 1000, amplitude: 3);
+            sine.Fill(pts);
+            oldestQueue.EnqueueRange(pts);
+            oldestQueue.GetMinMax(out float min, out float max);
             DrawLineControl.MinValue = min;
             DrawLineControl.MaxValue = max;
             DrawLineControl.SetValues(pts);
@@ -58,17 +51,19 @@ namespace SkiaBasicDrawing.ExampleApp.Views
 
         private void DispatcherTimer_Tick(object? sender, EventArgs e)
         {
+            UpdateValues();
+        }
+
+        private void UpdateValues()
+        {
             var spendTime = _stopwatch.Elapsed;
             var deltaTime = spendTime - _lastTimeSpan;
             _lastTimeSpan = spendTime;
-
-            UpdateValues(spendTime, deltaTime);
-        }
-
-        private void UpdateValues(TimeSpan spendTime, TimeSpan deltaTime)
-        {
             var buff = _sineGenerator.GenerateF(spendTime, deltaTime);
             buffer.EnqueueRange(buff);
+            buffer.GetMinMax(out float min, out float max);
+            DrawLineControl.MinValue = min;
+            DrawLineControl.MaxValue = max;
             DrawLineControl.SetValues(buffer.ToArray());
         }
 
@@ -79,10 +74,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views
 
             if(_stopwatch is not null)
             {
-                var spendTime = _stopwatch.Elapsed;
-                var deltaTime = spendTime - _lastTimeSpan;
-                _lastTimeSpan = spendTime;
-                UpdateValues(spendTime, deltaTime);
+                UpdateValues();
             }
 
             

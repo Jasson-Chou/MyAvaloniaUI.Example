@@ -50,6 +50,12 @@ namespace SkiaBasicDrawing.ExampleApp.Models
                 buffer[i] = NextSample();
         }
 
+        public void Fill(Span<float> buffer)
+        {
+            for (int i = 0; i < buffer.Length; i++)
+                buffer[i] = (float)NextSample();
+        }
+
         /// <summary>產生指定數量的樣本並回傳新陣列。</summary>
         public double[] Generate(int count)
         {

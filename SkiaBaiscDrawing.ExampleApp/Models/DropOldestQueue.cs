@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SkiaBasicDrawing.ExampleApp.Models
 {
-    public sealed class DropOldestQueue<T>
+    public sealed class DropOldestQueue<T> where T : INumber<T>
     {
         private readonly T[] _buffer;
         private T[]? _cachedFull;   // Count == Capacity 時重複使用
@@ -55,6 +56,26 @@ namespace SkiaBasicDrawing.ExampleApp.Models
         {
             foreach (var item in items)
                 Enqueue(item);
+        }
+
+        public bool GetMinMax(out T min, out T max)
+        { 
+            if (_count == 0)
+            {
+                min = T.Zero;
+                max = T.Zero;
+                return false;
+            }
+
+            min = _buffer[_head];
+            max = _buffer[_head];
+            for (int i = 1; i < _count; i++)
+            {
+                int index = (_head + i) % Capacity;
+                if (_buffer[index] < min) min = _buffer[index];
+                if (_buffer[index] > max) max = _buffer[index];
+            }
+            return true;
         }
 
         public T[] ToArray()
