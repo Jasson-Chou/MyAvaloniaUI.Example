@@ -104,5 +104,11 @@ namespace SkiaBasicDrawing.ExampleApp.Models
                 return _count;
             }
         }
+
+        public void Clear()
+        {
+            _head = 0;
+            _count = 0;
+        }
     }
 }

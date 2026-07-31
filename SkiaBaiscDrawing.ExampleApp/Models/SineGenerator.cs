@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SkiaBasicDrawing.ExampleApp.Models
 {
-    public class SineGenerator
+    public class SineGenerator: IWaveformSimulator
     {
         private readonly double _phaseIncrement; // 每個樣本的相位增量 (弧度)
         private double _phase;                   // 目前相位 (弧度)
@@ -17,9 +17,6 @@ namespace SkiaBasicDrawing.ExampleApp.Models
 
         public SineGenerator(double frequency, double sampleRate = 44100, double amplitude = 1.0)
         {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(frequency);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sampleRate);
-            ArgumentOutOfRangeException.ThrowIfNegative(amplitude);
 
             Frequency = frequency;
             SampleRate = sampleRate;
