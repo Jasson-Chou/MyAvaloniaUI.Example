@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
@@ -9,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -77,6 +79,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         public static readonly StyledProperty<IEnumerable?> ItemsProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IEnumerable?>(
                 nameof(Items), null);
+
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
@@ -201,8 +204,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             set => SetValue(ItemsProperty, value);
         }
 
-        
-
         public void SetItems(float[] values) => Items = values;
 
         static SkiaDrawWaveformScopeUsrCtrl()
@@ -228,16 +229,35 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private float ScopeWidth => (float)this.Bounds.Width - YLableWith;
         private float ScopeHeight => (float)this.Bounds.Height - XLableHeight;
 
+        private Stopwatch _fpsStopwatch = new Stopwatch();
+        private int _fpsAccumulatedFrames = 0;
+        private int _fpsUpdateCount = 0;
+        private FormattedText? _fpsFormattedText;
+        private readonly Point fpsDisplayPoint = new Point(10, 10);
+
+        protected override void OnPointerMoved(PointerEventArgs e)
+        {
+            base.OnPointerMoved(e);
+        }
+
         public override void Render(DrawingContext context)
+        {
+
+            DrawWaveform(context);
+
+            DrawFpsInfo(context);
+        }
+
+        private void DrawWaveform(DrawingContext context)
         {
             var boundWith = this.Bounds.Width;
             var boundHeight = this.Bounds.Height;
 
-            if(_skiaPen is null)
+            if (_skiaPen is null)
             {
                 _skiaPen = new SkiaPen(LineColor, StrokeWidth);
             }
-            else if(!_skiaPen.Equals(LineColor, StrokeWidth))
+            else if (!_skiaPen.Equals(LineColor, StrokeWidth))
             {
                 _skiaPen.Dispose();
                 _skiaPen = new SkiaPen(LineColor, StrokeWidth);
@@ -248,20 +268,47 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
 
-            if(PointCount > 0 && _cacheValues.Length > PointCount)
+            if (PointCount > 0 && _cacheValues.Length > PointCount)
             {
                 _cacheValues = _cacheValues.AsSpan(_cacheValues.Length - PointCount).ToArray();
             }
 
             SKPoint[] points = BuildSKPoints(_cacheValues, PointCount,
                 (float)YLableWith, (float)0,
-                (float)ScopeWidth, (float)ScopeHeight, 
+                (float)ScopeWidth, (float)ScopeHeight,
                 MaxValue, MinValue, scaling, XOffset, YOffset, XScale, YScale);
 
 
             var scopeRect = new Rect(YLableWith, 0, ScopeWidth, ScopeHeight);
             context.Custom(new SkiaDrawLine(points, _skiaPen, scopeRect, _skDrawLineVersion));
+        }
 
+        private void DrawFpsInfo(DrawingContext context)
+        {
+            
+
+            int Fps = 0;
+            if (_fpsStopwatch.Elapsed.TotalMilliseconds is double elapsedMs && elapsedMs > 0.0)
+            {
+                Fps = (int)(1000.0 / elapsedMs);
+            }
+            _fpsAccumulatedFrames += Fps;
+
+            if (_fpsUpdateCount++ > 10)
+            {
+                Fps = _fpsAccumulatedFrames / _fpsUpdateCount;
+                _fpsFormattedText = new FormattedText($"FPS: {Fps}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 16, Brushes.White);
+                _fpsUpdateCount = 0;
+                _fpsAccumulatedFrames = 0;
+            }
+
+            if(_fpsFormattedText is not null)
+            {
+                context.DrawText(_fpsFormattedText, fpsDisplayPoint);
+            }
+
+
+            _fpsStopwatch.Restart();
         }
 
         private static SKPoint[] BuildSKPoints(ReadOnlySpan<float> values, int pointCount, float left, float top, float width, float higth,

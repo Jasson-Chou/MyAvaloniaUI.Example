@@ -14,15 +14,31 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
     {
         public MainViewModel()
         {
-            
+            UserSetting = new UserSettingViewModel();
             if (Design.IsDesignMode)
             {
                 
             }
             else
             {
+                UserSetting.PropertyChanged += UserSetting_PropertyChanged;
                 var sineGen = new SineGenerator(UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
-                _waveformSimulator = new WaveformSimService(sineGen, _userSetting.PointCount);
+                _waveformSimulator = new WaveformSimService(sineGen, UserSetting.PointCount);
+            }
+        }
+
+        private void UserSetting_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch(e.PropertyName)
+            {
+                case nameof(UserSetting.AutoScale):
+                    if (UserSetting.AutoScale)
+                    {
+                        _waveformSimulator.GetMinMax(out float min, out float max);
+                        UserSetting.MinValue = min;
+                        UserSetting.MaxValue = max;
+                    }
+                    break;
             }
         }
 
@@ -30,16 +46,18 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         private WaveformSimService _waveformSimulator;
 
         [ObservableProperty]
-        private UserSettingViewModel _userSetting = new UserSettingViewModel();
+        private UserSettingViewModel _userSetting;
 
         [RelayCommand]
         private void Run()
         {
             // Implement the logic to start the drawing process
+            Items.Clear();
 
             var sineGen = new SineGenerator(UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
             _waveformSimulator = new WaveformSimService(sineGen, UserSetting.PointCount);
             _waveformSimulator.Start();
+
             _randerTimer.Tick += _randerTimer_Tick;
             _randerTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / UserSetting.Fps);
             _randerTimer.Start();
@@ -55,9 +73,13 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
                 UserSetting.MaxValue = max;
             }
             var values = _waveformSimulator.GetValues();
-            
+
+            //// for avalonialist, we can use ReplaceAll to update the collection efficiently
             Items.Clear();
             Items.AddRange(values);
+
+            //Items.ReplaceAll(values);
+
         }
 
         [RelayCommand]
@@ -70,6 +92,10 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 
         [ObservableProperty]
         private AvaloniaList<float> _items = new AvaloniaList<float>();
+
+        [ObservableProperty]
+        private TimeSpan _actualFps = TimeSpan.Zero;
+
     }
 
     public partial class SettingViewModelBase: ViewModelBase

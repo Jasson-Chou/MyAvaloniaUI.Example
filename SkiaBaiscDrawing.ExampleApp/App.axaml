@@ -4,7 +4,11 @@
              xmlns:local="using:SkiaBasicDrawing.ExampleApp"
              RequestedThemeVariant="Default">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+    <Application.Resources>
 
+        
+        
+    </Application.Resources>
     <Application.DataTemplates>
         <local:ViewLocator />
     </Application.DataTemplates>
