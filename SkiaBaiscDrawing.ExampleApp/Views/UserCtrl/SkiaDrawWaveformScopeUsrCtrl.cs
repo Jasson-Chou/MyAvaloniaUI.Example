@@ -21,8 +21,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
     public class SkiaDrawWaveformScopeUsrCtrl : UserControl
     {
 
-        private float[] _cacheValues = Array.Empty<float>();
-        private int _skDrawLineVersion;
+        
 
         public static readonly StyledProperty<float> MinValueProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
@@ -221,7 +220,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             YLableWith = 100;
             XLableHeight = 100;
         }
-
+        private float[] _cacheValues = Array.Empty<float>();
         private SkiaPen _skiaPen = null!;
 
         private float YLableWith { get; set; }
@@ -235,6 +234,11 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private FormattedText? _fpsFormattedText;
         private readonly Point fpsDisplayPoint = new Point(10, 10);
 
+        
+        private int _skDrawLineVersion;
+        private SkiaDrawLine _skiaDrawLine;
+        private int _skDrawGridVersion;
+
         protected override void OnPointerMoved(PointerEventArgs e)
         {
             base.OnPointerMoved(e);
@@ -244,6 +248,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         {
 
             DrawWaveform(context);
+
+            DrawGrid(context);
 
             DrawFpsInfo(context);
         }
@@ -280,7 +286,25 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
 
             var scopeRect = new Rect(YLableWith, 0, ScopeWidth, ScopeHeight);
-            context.Custom(new SkiaDrawLine(points, _skiaPen, scopeRect, _skDrawLineVersion));
+
+            if(_skiaDrawLine is null || _skiaDrawLine.Version != _skDrawLineVersion)
+            {
+                _skiaDrawLine = new SkiaDrawLine(points, _skiaPen, scopeRect, _skDrawLineVersion);
+            }
+
+            context.Custom(_skiaDrawLine);
+        }
+
+        private void DrawGrid(DrawingContext context)
+        {
+            var boundWith = this.Bounds.Width;
+            var boundHeight = this.Bounds.Height;
+            double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
+            var scopeRect = new Rect(YLableWith, 0, ScopeWidth, ScopeHeight);
+            using (var skiaDrawGrid = new SkiaDrawGrid())
+            {
+                context.Custom(skiaDrawGrid);
+            }
         }
 
         private void DrawFpsInfo(DrawingContext context)
@@ -294,7 +318,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             }
             _fpsAccumulatedFrames += Fps;
 
-            if (_fpsUpdateCount++ > 10)
+            if (_fpsUpdateCount++ >= 10)
             {
                 Fps = _fpsAccumulatedFrames / _fpsUpdateCount;
                 _fpsFormattedText = new FormattedText($"FPS: {Fps}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 16, Brushes.White);
@@ -422,11 +446,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             public SKPaint SKiaPaint => _sKPaint;
 
-            public override bool Equals(object? obj)
-            {
-                return obj is SkiaPen other && _color.Equals(other._color) && _strokeWidth.Equals(other._strokeWidth);
-            }
-
             public bool Equals(Color color, float strokeWidth)
             {
                 return _color.Equals(color) && _strokeWidth.Equals(strokeWidth);
@@ -451,6 +470,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             private readonly SKPoint[] _points;
             private readonly int _version;
             private readonly SkiaPen _sKiaPen;
+
+            public int Version => _version;
 
             public Rect Bounds { get; }
 
@@ -491,22 +512,24 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
         private class SkiaDrawGrid : ICustomDrawOperation
         {
-            public Rect Bounds => throw new NotImplementedException();
+            public Rect Bounds { get; }
             public void Dispose()
             {
-                throw new NotImplementedException();
+                //throw new NotImplementedException();
             }
             public bool Equals(ICustomDrawOperation? other)
             {
-                throw new NotImplementedException();
+                //throw new NotImplementedException();
+                return true;
             }
             public bool HitTest(Point p)
             {
-                throw new NotImplementedException();
+                //throw new NotImplementedException();
+                return true;
             }
             public void Render(ImmediateDrawingContext context)
             {
-                throw new NotImplementedException();
+                //throw new NotImplementedException();
             }
         }
     }
