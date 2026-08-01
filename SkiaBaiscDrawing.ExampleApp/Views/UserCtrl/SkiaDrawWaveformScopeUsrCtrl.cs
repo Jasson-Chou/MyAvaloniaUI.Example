@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -86,13 +87,13 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if(change.Property == XScaleProperty)
             {
                 double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
-                float xStep = (float)(ScopeWidth * XScale * scaling / (_cacheValues.Length - 1)); // 計算每個資料點的寬度
-                MaxXOffset = Math.Max(0.0f, (_cacheValues.Length - 1) * xStep - (float)ScopeWidth); // 計算新的最大 XOffset
+                float xStep = (float)(DrawGridWidth * XScale * scaling / (_cacheValues.Length - 1)); // 計算每個資料點的寬度
+                MaxXOffset = Math.Max(0.0f, (_cacheValues.Length - 1) * xStep - (float)DrawGridWidth); // 計算新的最大 XOffset
                 CoerceValue(XOffsetProperty); // 重新計算 XOffset 的值，確保它在新的範圍內 [呼叫'coerce']
             }
             else if(change.Property == YScaleProperty)
             {
-                MaxYOffset = YScale == 1.0f ? 0.0f : ScopeHeight * YScale - ScopeHeight; // 計算新的最大 YOffset
+                MaxYOffset = YScale == 1.0f ? 0.0f : DrawGridHeight * YScale - DrawGridHeight; // 計算新的最大 YOffset
                 CoerceValue(YOffsetProperty); // 重新計算 YOffset 的值，確保它在新的範圍內 [呼叫'coerce']
             }
             else if(change.Property == ItemsProperty)
@@ -109,6 +110,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 }
                 RebuildItemsCache();
             }
+            _skDrawWaveformLineVersion++;
+            _skDrawGridVersion++;
+
         }
 
         private INotifyCollectionChanged? _itemsNotifyCollectionChanged;
@@ -126,7 +130,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 IEnumerable<double> doubleItems => doubleItems.Select(d => (float)d).ToArray(),
                 _ => Array.Empty<float>(),
             };
-            _skDrawLineVersion++;
+            _skDrawWaveformLineVersion++;
         }
 
         public float MinValue
@@ -203,8 +207,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             set => SetValue(ItemsProperty, value);
         }
 
-        public void SetItems(float[] values) => Items = values;
-
         static SkiaDrawWaveformScopeUsrCtrl()
         {
             AffectsRender<SkiaDrawWaveformScopeUsrCtrl>(
@@ -217,16 +219,25 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         protected override void OnInitialized()
         {
             base.OnInitialized();
-            YLableWith = 100;
-            XLableHeight = 100;
+            DrawGridRectTop = 100;
+            DrawGridRectLeft = 100;
+            DrawTimeBarHeight = 100;
         }
         private float[] _cacheValues = Array.Empty<float>();
         private SkiaPen _skiaPen = null!;
 
-        private float YLableWith { get; set; }
-        private float XLableHeight { get; set; }
-        private float ScopeWidth => (float)this.Bounds.Width - YLableWith;
-        private float ScopeHeight => (float)this.Bounds.Height - XLableHeight;
+
+        private readonly float _drawWaveformMaxMinMarginRate = 0.1f; // 10% margin
+        private float DrawGridRectTop { get; set; }
+        private float DrawGridRectLeft { get; set; }
+        private float DrawTimeBarHeight { get; set; }
+        private float DrawGridWidth => (float)this.Bounds.Width - DrawGridRectLeft;
+        private float DrawGridHeight => (float)this.Bounds.Height - DrawGridRectTop - DrawTimeBarHeight;
+
+        private float DrawWaveformLineTop => DrawGridRectTop + (DrawGridHeight * _drawWaveformMaxMinMarginRate * 0.5f);
+        private float DrawWaveformLineLeft => DrawGridRectLeft;
+        private float DrawWaveformHeight => DrawGridHeight * (1 - _drawWaveformMaxMinMarginRate);
+        private float DrawWaveformWidth => DrawGridWidth;
 
         private Stopwatch _fpsStopwatch = new Stopwatch();
         private int _fpsAccumulatedFrames = 0;
@@ -234,10 +245,13 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private FormattedText? _fpsFormattedText;
         private readonly Point fpsDisplayPoint = new Point(10, 10);
 
-        
-        private int _skDrawLineVersion;
-        private SkiaDrawLine _skiaDrawLine;
+
+        private SKRect _drawScopeWaveformLineRect = SKRect.Empty;
+        private SKRect _drawScopeGridRect = SKRect.Empty;
+        private int _skDrawWaveformLineVersion;
+        private SkiaDrawWaveformLine? _skiaDrawWaveformLine;
         private int _skDrawGridVersion;
+        private SkiaDrawGrid? _skiaDrawGrid;
 
         protected override void OnPointerMoved(PointerEventArgs e)
         {
@@ -279,20 +293,25 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _cacheValues = _cacheValues.AsSpan(_cacheValues.Length - PointCount).ToArray();
             }
 
-            SKPoint[] points = BuildSKPoints(_cacheValues, PointCount,
-                (float)YLableWith, (float)0,
-                (float)ScopeWidth, (float)ScopeHeight,
-                MaxValue, MinValue, scaling, XOffset, YOffset, XScale, YScale);
+            
+            
 
-
-            var scopeRect = new Rect(YLableWith, 0, ScopeWidth, ScopeHeight);
-
-            if(_skiaDrawLine is null || _skiaDrawLine.Version != _skDrawLineVersion)
+            if (_skiaDrawWaveformLine is null || _skiaDrawWaveformLine.Version != _skDrawWaveformLineVersion)
             {
-                _skiaDrawLine = new SkiaDrawLine(points, _skiaPen, scopeRect, _skDrawLineVersion);
+
+                if(_drawScopeWaveformLineRect.IsEmpty || _drawScopeWaveformLineRect.Width != DrawGridWidth || _drawScopeWaveformLineRect.Height != DrawGridHeight)
+                {
+                    _drawScopeWaveformLineRect = new SKRect(DrawWaveformLineLeft, DrawWaveformLineTop, 0, 0);
+                    _drawScopeWaveformLineRect.Size = new SKSize(DrawWaveformWidth, DrawWaveformHeight);
+                }
+
+                SKPoint[] points = BuildSKPoints(_cacheValues, PointCount,
+                _drawScopeWaveformLineRect,
+                MaxValue, MinValue, scaling, XOffset, YOffset, XScale, YScale);
+                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(points, _skiaPen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
             }
 
-            context.Custom(_skiaDrawLine);
+            context.Custom(_skiaDrawWaveformLine);
         }
 
         private void DrawGrid(DrawingContext context)
@@ -300,11 +319,19 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             var boundWith = this.Bounds.Width;
             var boundHeight = this.Bounds.Height;
             double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
-            var scopeRect = new Rect(YLableWith, 0, ScopeWidth, ScopeHeight);
-            using (var skiaDrawGrid = new SkiaDrawGrid())
+            
+            if(_skiaDrawGrid is null || _skiaDrawGrid.Version != _skDrawGridVersion)
             {
-                context.Custom(skiaDrawGrid);
+                if(_drawScopeGridRect.IsEmpty || _drawScopeGridRect.Width != DrawGridWidth || _drawScopeGridRect.Height != DrawGridHeight)
+                {
+                    _drawScopeGridRect = new SKRect(DrawGridRectLeft, DrawGridRectTop, 0, 0);
+                    _drawScopeGridRect.Size = new SKSize(DrawGridWidth, DrawGridHeight);
+                }
+
+                _skiaDrawGrid = new SkiaDrawGrid(_drawScopeGridRect, _skiaPen, _skDrawGridVersion);
             }
+
+            context.Custom(_skiaDrawGrid);
         }
 
         private void DrawFpsInfo(DrawingContext context)
@@ -335,12 +362,17 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             _fpsStopwatch.Restart();
         }
 
-        private static SKPoint[] BuildSKPoints(ReadOnlySpan<float> values, int pointCount, float left, float top, float width, float higth,
+        private static SKPoint[] BuildSKPoints(ReadOnlySpan<float> values, int pointCount, SKRect rect,
             float maxValue, float minValue, double renderScaling, float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
         {
             int n = values.Length;
             if (n == 0) return Array.Empty<SKPoint>();
             
+            float left = rect.Left;
+            float top = rect.Top;
+            float width = rect.Width;
+            float higth = rect.Height;
+
             int canShowColumns = (int)Math.Ceiling(width * renderScaling);
 
             float yRange = maxValue - minValue;
@@ -457,20 +489,21 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             }
         }
 
-        private class SkiaDrawLine : ICustomDrawOperation
+        private class SkiaDrawWaveformLine : ICustomDrawOperation
         {
-            public SkiaDrawLine(SKPoint[] points, SkiaPen skiaPen, Rect bounds, int version)
+            public SkiaDrawWaveformLine(SKPoint[] points, SkiaPen skiaPen, SKRect bounds, int version)
             {
                 _points = points;
                 _sKiaPen = skiaPen;
-                Bounds = bounds;
+                _bounds = bounds;
+                Bounds = new Rect(bounds.Left, bounds.Top, bounds.Width, bounds.Height);
                 _version = version;
             }
 
             private readonly SKPoint[] _points;
             private readonly int _version;
-            private readonly SkiaPen _sKiaPen;
-
+            private readonly SkiaPen? _sKiaPen;
+            private readonly SKRect _bounds;
             public int Version => _version;
 
             public Rect Bounds { get; }
@@ -482,7 +515,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             public bool Equals(ICustomDrawOperation? other)
             {
-                return other is SkiaDrawLine otherLine && _version == otherLine._version;
+                return other is SkiaDrawWaveformLine otherLine && _version == otherLine._version;
             }
 
             public bool HitTest(Point p)
@@ -500,10 +533,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 var canvas = lease.SkCanvas;
 
                 canvas.Save();
-                canvas.ClipRect(new SKRect((float)Bounds.Left, (float)Bounds.Top,
-                    (float)Bounds.Right, (float)Bounds.Bottom));
+                canvas.ClipRect(_bounds);
 
-                canvas.DrawPoints(SKPointMode.Polygon, _points, _sKiaPen.SKiaPaint);
+                if(_sKiaPen is not null)
+                    canvas.DrawPoints(SKPointMode.Polygon, _points, _sKiaPen.SKiaPaint);
 
                 canvas.Restore();
             }
@@ -512,6 +545,19 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
         private class SkiaDrawGrid : ICustomDrawOperation
         {
+
+            public SkiaDrawGrid(SKRect sKRect, SkiaPen skiaPen, int version)
+            {
+                _version = version;
+                _sKiaPen = skiaPen;
+                _bounds = sKRect;
+                Bounds = new Rect(_bounds.Left, _bounds.Top, _bounds.Width, _bounds.Height);
+            }
+
+            private readonly int _version;
+            private readonly SkiaPen? _sKiaPen;
+            private readonly SKRect _bounds;
+            public int Version => _version;
             public Rect Bounds { get; }
             public void Dispose()
             {
@@ -520,16 +566,32 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             public bool Equals(ICustomDrawOperation? other)
             {
                 //throw new NotImplementedException();
-                return true;
+                return other is SkiaDrawGrid otherGrid && _version == otherGrid._version;
             }
             public bool HitTest(Point p)
             {
                 //throw new NotImplementedException();
-                return true;
+                return Bounds.Contains(p);
             }
             public void Render(ImmediateDrawingContext context)
             {
-                //throw new NotImplementedException();
+                var leaseFeature = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
+                if (leaseFeature is null)
+                    return;
+                using var lease = leaseFeature.Lease();
+                var canvas = lease.SkCanvas;
+
+                canvas.Save();
+                canvas.ClipRect(_bounds);
+
+                if(_sKiaPen is not null)
+                {
+                    canvas.DrawLine(_bounds.Left, _bounds.Top, _bounds.Left, _bounds.Bottom, _sKiaPen.SKiaPaint);
+                    canvas.DrawLine(_bounds.Left, _bounds.Bottom, _bounds.Right, _bounds.Bottom, _sKiaPen.SKiaPaint);
+
+                }
+
+                canvas.Restore();
             }
         }
     }
