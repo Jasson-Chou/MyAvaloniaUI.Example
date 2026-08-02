@@ -3,6 +3,7 @@ using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Media.TextFormatting;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using SkiaSharp;
@@ -14,6 +15,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -32,13 +34,13 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
                 nameof(MaxValue), float.MinValue);
 
-        public static readonly StyledProperty<Color> LineColorProperty =
+        public static readonly StyledProperty<Color> WaveformLineColorProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, Color>(
-                nameof(LineColor), Colors.DeepSkyBlue);
+                nameof(WaveformLineColor), Colors.DeepSkyBlue);
 
-        public static readonly StyledProperty<float> StrokeWidthProperty =
+        public static readonly StyledProperty<float> WaveformLineStrokeWidthProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
-                nameof(StrokeWidth), 1.0f);
+                nameof(WaveformLineStrokeWidth), 1.0f);
 
         public static readonly StyledProperty<float> XScaleProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
@@ -93,7 +95,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             }
             else if(change.Property == YScaleProperty)
             {
-                MaxYOffset = YScale == 1.0f ? 0.0f : DrawGridHeight * YScale - DrawGridHeight; // 計算新的最大 YOffset
+                var defaultHeight = DefaultDrawGridMinValueTop - DefaultDrawGridMaxValueTop;
+                MaxYOffset = YScale == 1.0f ? 0.0f : defaultHeight * YScale - defaultHeight; // 計算新的最大 YOffset
                 CoerceValue(YOffsetProperty); // 重新計算 YOffset 的值，確保它在新的範圍內 [呼叫'coerce']
             }
             else if(change.Property == ItemsProperty)
@@ -145,16 +148,16 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             set => SetValue(MaxValueProperty, value);
         }
 
-        public Color LineColor
+        public Color WaveformLineColor
         {
-            get => GetValue(LineColorProperty);
-            set => SetValue(LineColorProperty, value);
+            get => GetValue(WaveformLineColorProperty);
+            set => SetValue(WaveformLineColorProperty, value);
         }
 
-        public float StrokeWidth
+        public float WaveformLineStrokeWidth
         {
-            get => GetValue(StrokeWidthProperty);
-            set => SetValue(StrokeWidthProperty, value);
+            get => GetValue(WaveformLineStrokeWidthProperty);
+            set => SetValue(WaveformLineStrokeWidthProperty, value);
         }
 
         public float XScale
@@ -211,7 +214,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         {
             AffectsRender<SkiaDrawWaveformScopeUsrCtrl>(
                 MinValueProperty, MaxValueProperty, 
-                LineColorProperty, StrokeWidthProperty, 
+                WaveformLineColorProperty, WaveformLineStrokeWidthProperty, 
                 XScaleProperty, YScaleProperty, XOffsetProperty, YOffsetProperty,
                 PointCountProperty, ItemsProperty);
         }
@@ -224,28 +227,42 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             DrawTimeBarHeight = 100;
         }
         private float[] _cacheValues = Array.Empty<float>();
-        private SkiaPen _skiaPen = null!;
+        private SkiaPen _skiaWaveformLinePen = null!;
+        private SkiaPen _skiaGridLinePen = null!;
 
 
-        private readonly float _drawWaveformMaxMinMarginRate = 0.1f; // 10% margin
+        private readonly float _drawWaveformMaxMinHeightMarginRate = 0.1f; // 10% margin
+        private readonly float _drawWaveformMaxMinWidthMarginRate = 0.025f; // 2.5% margin
         private float DrawGridRectTop { get; set; }
         private float DrawGridRectLeft { get; set; }
         private float DrawTimeBarHeight { get; set; }
         private float DrawGridWidth => (float)this.Bounds.Width - DrawGridRectLeft;
         private float DrawGridHeight => (float)this.Bounds.Height - DrawGridRectTop - DrawTimeBarHeight;
 
-        private float DrawWaveformLineTop => DrawGridRectTop + (DrawGridHeight * _drawWaveformMaxMinMarginRate * 0.5f);
+        private float DrawWaveformLineTop => DrawGridRectTop + (DrawGridHeight * _drawWaveformMaxMinHeightMarginRate * 0.5f);
         private float DrawWaveformLineLeft => DrawGridRectLeft;
-        private float DrawWaveformHeight => DrawGridHeight * (1 - _drawWaveformMaxMinMarginRate);
+        private float DrawWaveformHeight => DrawGridHeight * (1 - _drawWaveformMaxMinHeightMarginRate);
         private float DrawWaveformWidth => DrawGridWidth;
+
+        private float DefaultDrawGridMaxValueTop => DrawWaveformLineTop;
+        private float DefaultDrawGridMinValueTop => DefaultDrawGridMaxValueTop + DrawWaveformHeight;
+
+        private float DrawGridMaxMinValueScaleLineLength => DrawGridWidth * _drawWaveformMaxMinWidthMarginRate;
 
         private Stopwatch _fpsStopwatch = new Stopwatch();
         private int _fpsAccumulatedFrames = 0;
         private int _fpsUpdateCount = 0;
         private FormattedText? _fpsFormattedText;
         private readonly Point fpsDisplayPoint = new Point(10, 10);
+        private FormattedText? _downSamplingFormattedText;
+        private readonly Point downSamplingDisplayPoint = new Point(10, 30);
+
+        private readonly float _drawMaxMinValueTextMargin = 5.0f; // Margin between the max/min value text and the scale line
+        private DrawTextInfo? _maxValueDrawText;
+        private DrawTextInfo? _minValueDrawText;
 
 
+        private SKRect _drawRect = SKRect.Empty;
         private SKRect _drawScopeWaveformLineRect = SKRect.Empty;
         private SKRect _drawScopeGridRect = SKRect.Empty;
         private int _skDrawWaveformLineVersion;
@@ -273,65 +290,103 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             var boundWith = this.Bounds.Width;
             var boundHeight = this.Bounds.Height;
 
-            if (_skiaPen is null)
-            {
-                _skiaPen = new SkiaPen(LineColor, StrokeWidth);
-            }
-            else if (!_skiaPen.Equals(LineColor, StrokeWidth))
-            {
-                _skiaPen.Dispose();
-                _skiaPen = new SkiaPen(LineColor, StrokeWidth);
-            }
+            _skiaWaveformLinePen = _skiaWaveformLinePen.CompareOrGet(WaveformLineColor, WaveformLineStrokeWidth);
 
             if (_cacheValues.Length < 2)
                 return;
 
             double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
-
+            bool isDownSampling = false;
             if (PointCount > 0 && _cacheValues.Length > PointCount)
             {
                 _cacheValues = _cacheValues.AsSpan(_cacheValues.Length - PointCount).ToArray();
             }
 
-            
-            
-
             if (_skiaDrawWaveformLine is null || _skiaDrawWaveformLine.Version != _skDrawWaveformLineVersion)
             {
 
-                if(_drawScopeWaveformLineRect.IsEmpty || _drawScopeWaveformLineRect.Width != DrawGridWidth || _drawScopeWaveformLineRect.Height != DrawGridHeight)
+                if(_drawScopeWaveformLineRect.IsEmpty || _drawScopeWaveformLineRect.Width != DrawWaveformWidth || _drawScopeWaveformLineRect.Height != DrawWaveformHeight)
                 {
                     _drawScopeWaveformLineRect = new SKRect(DrawWaveformLineLeft, DrawWaveformLineTop, 0, 0);
                     _drawScopeWaveformLineRect.Size = new SKSize(DrawWaveformWidth, DrawWaveformHeight);
                 }
 
-                SKPoint[] points = BuildSKPoints(_cacheValues, PointCount,
+                SKPoint[] points = BuildScopeWaveformPoints(_cacheValues, PointCount,
                 _drawScopeWaveformLineRect,
-                MaxValue, MinValue, scaling, XOffset, YOffset, XScale, YScale);
-                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(points, _skiaPen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
+                MaxValue, MinValue, scaling, out isDownSampling, XOffset, YOffset, XScale, YScale);
+                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(points, _skiaWaveformLinePen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
+
             }
 
             context.Custom(_skiaDrawWaveformLine);
+
+            if(isDownSampling)
+            {
+                if(_downSamplingFormattedText is null)
+                {
+                    _downSamplingFormattedText = new FormattedText("Downsampling...", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                }
+                context.DrawText(_downSamplingFormattedText, downSamplingDisplayPoint);
+            }
         }
 
         private void DrawGrid(DrawingContext context)
         {
-            var boundWith = this.Bounds.Width;
-            var boundHeight = this.Bounds.Height;
+            var boundWith = (float)this.Bounds.Width;
+            var boundHeight = (float)this.Bounds.Height;
             double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
-            
-            if(_skiaDrawGrid is null || _skiaDrawGrid.Version != _skDrawGridVersion)
+
+            var defaultHeight = DefaultDrawGridMinValueTop - DefaultDrawGridMaxValueTop;
+            var actualHeight = defaultHeight * YScale;
+            var actualMaxValueTop = DefaultDrawGridMaxValueTop - YOffset;
+            var actualMinValueTop = actualMaxValueTop + actualHeight;
+
+            var drawGridMaxMinValueScaleLineLeft = DrawGridRectLeft - DrawGridMaxMinValueScaleLineLength * 0.5f;
+
+            _skiaGridLinePen = _skiaGridLinePen.CompareOrGet(Colors.Gray, 1.0f);
+
+            if (_skiaDrawGrid is null || _skiaDrawGrid.Version != _skDrawGridVersion)
             {
+                if(_drawRect.IsEmpty || _drawRect.Width != DrawGridWidth || _drawRect.Height != DrawGridHeight)
+                {
+                    _drawRect = new SKRect(0, 0, 0, 0);
+                    _drawRect.Size = new SKSize(boundWith, boundHeight);
+                }
+
                 if(_drawScopeGridRect.IsEmpty || _drawScopeGridRect.Width != DrawGridWidth || _drawScopeGridRect.Height != DrawGridHeight)
                 {
                     _drawScopeGridRect = new SKRect(DrawGridRectLeft, DrawGridRectTop, 0, 0);
                     _drawScopeGridRect.Size = new SKSize(DrawGridWidth, DrawGridHeight);
                 }
 
-                _skiaDrawGrid = new SkiaDrawGrid(_drawScopeGridRect, _skiaPen, _skDrawGridVersion);
+                if (_drawScopeWaveformLineRect.IsEmpty || _drawScopeWaveformLineRect.Width != DrawWaveformWidth || _drawScopeWaveformLineRect.Height != DrawWaveformHeight)
+                {
+                    _drawScopeWaveformLineRect = new SKRect(DrawWaveformLineLeft, DrawWaveformLineTop, 0, 0);
+                    _drawScopeWaveformLineRect.Size = new SKSize(DrawWaveformWidth, DrawWaveformHeight);
+                }
+
+
+                string maxValueText = $"{MaxValue} V";
+                string minValueText = $"{MinValue} V";
+
+                _maxValueDrawText = _maxValueDrawText.CompareOrGet(maxValueText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.White);
+                _maxValueDrawText.Position = new Point(drawGridMaxMinValueScaleLineLeft - _maxValueDrawText.Width - _drawMaxMinValueTextMargin, actualMaxValueTop - _maxValueDrawText.MidHeight);
+
+                _minValueDrawText = _minValueDrawText.CompareOrGet(minValueText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.White);
+                _minValueDrawText.Position = new Point(drawGridMaxMinValueScaleLineLeft - _minValueDrawText.Width - _drawMaxMinValueTextMargin, actualMinValueTop - _minValueDrawText.MidHeight);
+
+                _skiaDrawGrid = new SkiaDrawGrid(_drawRect, _drawScopeGridRect, _drawScopeWaveformLineRect,
+                    actualMaxValueTop, actualMinValueTop, DrawGridMaxMinValueScaleLineLength,
+                    _skiaGridLinePen, _skDrawGridVersion);
+
+                
             }
 
             context.Custom(_skiaDrawGrid);
+            if(_maxValueDrawText is not null && _drawScopeWaveformLineRect.Top <= actualMaxValueTop)
+                _maxValueDrawText?.Draw(context);
+            if (_minValueDrawText is not null && _drawScopeWaveformLineRect.Bottom >= actualMinValueTop)
+                _minValueDrawText?.Draw(context);
         }
 
         private void DrawFpsInfo(DrawingContext context)
@@ -362,11 +417,15 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             _fpsStopwatch.Restart();
         }
 
-        private static SKPoint[] BuildSKPoints(ReadOnlySpan<float> values, int pointCount, SKRect rect,
-            float maxValue, float minValue, double renderScaling, float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
+        private static SKPoint[] BuildScopeWaveformPoints(ReadOnlySpan<float> values, int pointCount, SKRect rect,
+            float maxValue, float minValue, double renderScaling, out bool isDownSampling, float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
         {
             int n = values.Length;
-            if (n == 0) return Array.Empty<SKPoint>();
+            isDownSampling = false;
+            if (n == 0) 
+            {
+                return Array.Empty<SKPoint>();
+            }
             
             float left = rect.Left;
             float top = rect.Top;
@@ -406,6 +465,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     sKPoints[i] = new SKPoint(x, y);
                     x += xStep;
                 }
+                isDownSampling = false;
                 return sKPoints;
             }
             else
@@ -449,46 +509,13 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     }
 
                 }
-
+                isDownSampling = true;
                 return sKPoints;
             }
 
         }
 
-        private class SkiaPen : IDisposable
-        {
-            bool isDisposed = false;
-            private readonly Color _color;
-            private readonly float _strokeWidth;
-            private readonly SKPaint _sKPaint;
-            public SkiaPen(Color color, float strokeWidth)
-            {
-                _color = color;
-                _strokeWidth = strokeWidth;
-                _sKPaint = new SKPaint
-                {
-                    Color = new SKColor(_color.R, _color.G, _color.B, _color.A),
-                    Style = SKPaintStyle.Stroke,
-                    StrokeWidth = _strokeWidth,
-                    IsAntialias = true,
-                    StrokeJoin = SKStrokeJoin.Round,
-                    StrokeCap = SKStrokeCap.Round,
-                };
-            }
-
-            public SKPaint SKiaPaint => _sKPaint;
-
-            public bool Equals(Color color, float strokeWidth)
-            {
-                return _color.Equals(color) && _strokeWidth.Equals(strokeWidth);
-            }
-
-            public void Dispose()
-            {
-                isDisposed = true;
-            }
-        }
-
+        
         private class SkiaDrawWaveformLine : ICustomDrawOperation
         {
             public SkiaDrawWaveformLine(SKPoint[] points, SkiaPen skiaPen, SKRect bounds, int version)
@@ -546,17 +573,29 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private class SkiaDrawGrid : ICustomDrawOperation
         {
 
-            public SkiaDrawGrid(SKRect sKRect, SkiaPen skiaPen, int version)
+            public SkiaDrawGrid(SKRect drawRect, SKRect drawGridRect, SKRect drawWaveformRect,
+                float maxValueTop, float minValueTop, float scaleLineLength,
+                SkiaPen skiaPen, int version)
             {
                 _version = version;
                 _sKiaPen = skiaPen;
-                _bounds = sKRect;
+                _bounds = drawRect;
+                _drawGridRect = drawGridRect;
+                _drawWaveformRect = drawWaveformRect;
+                _maxValueTop = maxValueTop;
+                _minValueTop = minValueTop;
+                _scaleLineLength = scaleLineLength;
                 Bounds = new Rect(_bounds.Left, _bounds.Top, _bounds.Width, _bounds.Height);
             }
 
             private readonly int _version;
             private readonly SkiaPen? _sKiaPen;
             private readonly SKRect _bounds;
+            private readonly SKRect _drawGridRect;
+            private readonly SKRect _drawWaveformRect;
+            private readonly float _maxValueTop;
+            private readonly float _minValueTop;
+            private readonly float _scaleLineLength;
             public int Version => _version;
             public Rect Bounds { get; }
             public void Dispose()
@@ -586,13 +625,136 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 if(_sKiaPen is not null)
                 {
-                    canvas.DrawLine(_bounds.Left, _bounds.Top, _bounds.Left, _bounds.Bottom, _sKiaPen.SKiaPaint);
-                    canvas.DrawLine(_bounds.Left, _bounds.Bottom, _bounds.Right, _bounds.Bottom, _sKiaPen.SKiaPaint);
+                    canvas.DrawLine(_drawGridRect.Left, _drawGridRect.Top, _drawGridRect.Left, _drawGridRect.Bottom, _sKiaPen.SKiaPaint);
+                    canvas.DrawLine(_drawGridRect.Left, _drawGridRect.Bottom,_drawGridRect.Right, _drawGridRect.Bottom, _sKiaPen.SKiaPaint);
+                    float midScaleLineLength = _scaleLineLength * 0.5f;
 
+                    if(_drawWaveformRect.Top <= _maxValueTop)
+                        canvas.DrawLine(_drawGridRect.Left - midScaleLineLength, _maxValueTop, _drawGridRect.Left + midScaleLineLength, _maxValueTop, _sKiaPen.SKiaPaint);
+
+                    if(_drawWaveformRect.Bottom >= _minValueTop)
+                        canvas.DrawLine(_drawGridRect.Left - midScaleLineLength, _minValueTop, _drawGridRect.Left + midScaleLineLength, _minValueTop, _sKiaPen.SKiaPaint);
+                    
                 }
 
                 canvas.Restore();
             }
         }
     }
+
+    internal class DrawTextInfo
+    {
+        public DrawTextInfo(string text, CultureInfo cultureInfo, FlowDirection flowDirection, Typeface typeface, double fontSize, IBrush brush) 
+        { 
+            Text = text;
+            CultureInfo = cultureInfo;
+            FlowDirection = flowDirection;
+            Typeface = typeface;
+            FontSize = fontSize;
+            Brush = brush;
+            FormattedText = new FormattedText(Text, CultureInfo, FlowDirection, Typeface, FontSize, Brush);
+        }
+
+        public string Text { get; }
+
+        public CultureInfo CultureInfo { get; } = CultureInfo.InvariantCulture;
+
+        public FlowDirection FlowDirection { get; } = FlowDirection.LeftToRight;
+
+        public Typeface Typeface { get; }
+
+        public double FontSize { get; } = 12.0;
+
+        public IBrush? Brush { get; } = Brushes.White;
+
+        public FormattedText FormattedText { get; }
+
+        public double Height => FormattedText.Height;
+
+        public double MidHeight => Height * 0.5;
+
+        public double Width => FormattedText.Width;
+
+        public Point Position { get; set; }
+
+        public bool Equals(string text, CultureInfo cultureInfo, FlowDirection flowDirection, Typeface typeface, double fontSize, IBrush brush)
+        {
+            return Text == text &&
+                CultureInfo.Equals(cultureInfo) &&
+                FlowDirection == flowDirection &&
+                Typeface.Equals(typeface) &&
+                FontSize.Equals(fontSize) &&
+                Brush?.Equals(brush) == true;
+        }
+
+        public void Draw(DrawingContext context)
+        {
+            context.DrawText(FormattedText, Position);
+        }
+
+    }
+
+    internal class SkiaPen : IDisposable
+    {
+        bool isDisposed = false;
+        internal readonly Color _color;
+        internal readonly float _strokeWidth;
+        private readonly SKPaint _sKPaint;
+        public SkiaPen(Color color, float strokeWidth)
+        {
+            _color = color;
+            _strokeWidth = strokeWidth;
+            _sKPaint = new SKPaint
+            {
+                Color = new SKColor(_color.R, _color.G, _color.B, _color.A),
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = _strokeWidth,
+                IsAntialias = true,
+                StrokeJoin = SKStrokeJoin.Round,
+                StrokeCap = SKStrokeCap.Round,
+            };
+        }
+
+        public SKPaint SKiaPaint => _sKPaint;
+
+        public bool Equals(Color color, float strokeWidth)
+        {
+            return _color.Equals(color) && _strokeWidth.Equals(strokeWidth);
+        }
+
+        public void Dispose()
+        {
+            if (!isDisposed)
+            {
+                isDisposed = true;
+                _sKPaint.Dispose();
+            }
+        }
+    }
+
+    internal static class SkiaPenExtensions
+    {
+        public static SkiaPen CompareOrGet(this SkiaPen? skiaPen, Color color, float strokeWidth)
+        {
+            if (skiaPen is null || !skiaPen.Equals(color, strokeWidth))
+            {
+                skiaPen?.Dispose();
+                return new SkiaPen(color, strokeWidth);
+            }
+            return skiaPen;
+        }
+    }
+
+    internal static class DrawTextInfoExtensions
+    {
+        public static DrawTextInfo CompareOrGet(this DrawTextInfo? drawTextInfo, string text, CultureInfo cultureInfo, FlowDirection flowDirection, Typeface typeface, double fontSize, IBrush brush)
+        {
+            if (drawTextInfo is null || !drawTextInfo.Equals(text, cultureInfo, flowDirection, typeface, fontSize, brush))
+            {
+                return new DrawTextInfo(text, cultureInfo, flowDirection, typeface, fontSize, brush);
+            }
+            return drawTextInfo;
+        }
+    }
+
 }

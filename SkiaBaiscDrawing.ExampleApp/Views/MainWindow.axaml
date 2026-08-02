@@ -48,7 +48,7 @@
                                               YScale="{Binding #yScaleSlider.Value}"
                                               MaxValue="{Binding UserSetting.MaxValue}"
                                               MinValue="{Binding UserSetting.MinValue}"
-                                              PointCount="{Binding UserSetting.PointCount}"
+                                              PointCount="{Binding PointCount}"
                                               Items="{Binding Items}"
                                               />
 

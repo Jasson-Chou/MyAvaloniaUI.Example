@@ -53,7 +53,8 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         {
             // Implement the logic to start the drawing process
             Items.Clear();
-
+            IsRunning = true;
+            PointCount = UserSetting.PointCount;
             var sineGen = new SineGenerator(UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
             _waveformSimulator = new WaveformSimService(sineGen, UserSetting.PointCount);
             _waveformSimulator.Start();
@@ -88,7 +89,14 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             _randerTimer.Stop();
             _randerTimer.Tick -= _randerTimer_Tick;
             _waveformSimulator.Stop();
+            IsRunning = false;
         }
+
+        [ObservableProperty]
+        private bool _isRunning = false;
+
+        [ObservableProperty]
+        private int _pointCount = 1000;
 
         [ObservableProperty]
         private AvaloniaList<float> _items = new AvaloniaList<float>();
