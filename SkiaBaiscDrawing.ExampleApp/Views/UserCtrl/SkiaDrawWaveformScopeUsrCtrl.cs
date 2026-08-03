@@ -346,10 +346,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     _drawScopeWaveformLineRect.Size = new SKSize(DrawWaveformWidth, DrawWaveformHeight);
                 }
 
-                SKPoint[] points = BuildScopeWaveformPoints(_cacheValues, PointCount,
+                var (points, actualIndexes) = BuildScopeWaveformPoints(_cacheValues, PointCount,
                 _drawScopeWaveformLineRect,
                 MaxValue, MinValue, scaling, out _isDownSampling, XOffset, YOffset, XScale, YScale);
-                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(points, _skiaWaveformLinePen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
+                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(points, actualIndexes, _skiaWaveformLinePen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
 
             }
 
@@ -473,6 +473,13 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     valueText.Position = new Point(targetPoint.X - valueText.MidWidth, waveformRect.Bottom);
                     context.DrawText(valueText.FormattedText, valueText.Position);
                 }
+                else
+                {
+                    var actualIndex = _skiaDrawWaveformLine.ActualIndexes[index];
+                    DrawTextInfo valueText = new DrawTextInfo($"Idx:{actualIndex}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                    valueText.Position = new Point(targetPoint.X - valueText.MidWidth, waveformRect.Bottom);
+                    context.DrawText(valueText.FormattedText, valueText.Position);
+                }
             }
             else
                 isPointInWaveformRect = false;
@@ -546,14 +553,14 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 : upper;
         }
 
-        private static SKPoint[] BuildScopeWaveformPoints(ReadOnlySpan<float> values, int pointCount, SKRect rect,
+        private static (SKPoint[] skPoints, int[] actualIndexes) BuildScopeWaveformPoints(ReadOnlySpan<float> values, int pointCount, SKRect rect,
             float maxValue, float minValue, double renderScaling, out bool isDownSampling, float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
         {
             int n = values.Length;
             isDownSampling = false;
             if (n == 0) 
             {
-                return Array.Empty<SKPoint>();
+                return (Array.Empty<SKPoint>(), Array.Empty<int>());
             }
             
             float left = rect.Left;
@@ -586,22 +593,25 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             {
                 destCount = Math.Min(destCount, n - startIndex);
                 SKPoint[] sKPoints = new SKPoint[destCount];
+                int[] actualIndexes = new int[destCount];
                 float x = left;
                 for (int i = 0; i < destCount && startIndex + i < n; i++)
                 {
                     int valueIndex = startIndex + i;
                     float y = getYValue(values[valueIndex]);
                     sKPoints[i] = new SKPoint(x, y);
+                    actualIndexes[i] = valueIndex;
                     x += xStep;
                 }
                 isDownSampling = false;
-                return sKPoints;
+                return (sKPoints, actualIndexes);
             }
             else
             {
                 // 採樣顯示，避免過多的點數 (min-max downsampling)
                 int sampleRate = (int)Math.Ceiling((double)destCount / canShowColumns);
                 SKPoint[] sKPoints = new SKPoint[canShowColumns * 2];
+                int[] actualIndexes = new int[canShowColumns * 2];
                 int sKPointIdx = 0;
                 for (int i = 0; i < canShowColumns; i++)
                 {
@@ -628,18 +638,22 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                     if (cLIdx < cHIdx)
                     {
+                        actualIndexes[sKPointIdx] = cLIdx;
                         sKPoints[sKPointIdx++] = new SKPoint(left + (cLIdx * xStep), getYValue(cLValue));
+                        actualIndexes[sKPointIdx] = cHIdx;
                         sKPoints[sKPointIdx++] = new SKPoint(left + (cHIdx * xStep), getYValue(cHValue));
                     }
                     else
                     {
+                        actualIndexes[sKPointIdx] = cHIdx;
                         sKPoints[sKPointIdx++] = new SKPoint(left + (cHIdx * xStep), getYValue(cHValue));
+                        actualIndexes[sKPointIdx] = cLIdx;
                         sKPoints[sKPointIdx++] = new SKPoint(left + (cLIdx * xStep), getYValue(cLValue));
                     }
 
                 }
                 isDownSampling = true;
-                return sKPoints;
+                return (sKPoints, actualIndexes);
             }
 
         }
@@ -647,9 +661,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         
         private class SkiaDrawWaveformLine : ICustomDrawOperation
         {
-            public SkiaDrawWaveformLine(SKPoint[] points, SkiaPen skiaPen, SKRect bounds, int version)
+            public SkiaDrawWaveformLine(SKPoint[] points, int[] actualIndexes, SkiaPen skiaPen, SKRect bounds, int version)
             {
                 _points = points;
+                _actualIndexes = actualIndexes;
                 _sKiaPen = skiaPen;
                 _bounds = bounds;
                 Bounds = new Rect(bounds.Left, bounds.Top, bounds.Width, bounds.Height);
@@ -657,11 +672,15 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             }
 
             private readonly SKPoint[] _points;
+            private readonly int[] _actualIndexes;
             private readonly int _version;
             private readonly SkiaPen? _sKiaPen;
             private readonly SKRect _bounds;
             
             public SKPoint[] Points => _points;
+
+            public int[] ActualIndexes => _actualIndexes;
+
             public int Version => _version;
 
             public Rect Bounds { get; }
