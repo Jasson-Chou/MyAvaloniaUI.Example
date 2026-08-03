@@ -441,22 +441,55 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             var xStep = points.Length > 1 ? MathF.Abs(points[1].X - points[0].X) : float.NaN;
             if (float.IsNaN(xStep)) return;
 
-            var index = (int)Math.Round(pointerXOffset / xStep);
-            if(points.Length == 0 || index < 0 || index >= points.Length) 
-                return;
+            int index = 0;
+            if(xStep != 0)
+            {
+                index = (int)Math.Round(pointerXOffset / xStep);
+                if(points.Length == 0 || index < 0 || index >= points.Length) return;
+            }
 
-            var targetPoint = points[index];
+            SKPoint targetPoint = SKPoint.Empty;
+            if(_isDownSampling)
+            {
+                index = FindNearestIndex(points, new SKPoint((float)currPointerPosition.X, (float)currPointerPosition.Y));
+            }
+
+            if(index < 0)
+            {
+                return;    
+            }
+
+            targetPoint = points[index];
             var cursorPen = new Pen(Brushes.Red, 1.0) { DashStyle = DashStyle.Dash };
             bool isPointInWaveformRect = true;
             // Draw vertical line
             if (targetPoint.X >= waveformRect.Left && targetPoint.X <= waveformRect.Right)
+            { 
                 context.DrawLine(cursorPen, new Point(targetPoint.X, waveformRect.Top), new Point(targetPoint.X, waveformRect.Bottom));
+                if(false == _isDownSampling)
+                {
+                    var actualIndex = index + (int)MathF.Round(XOffset / xStep); // 計算實際的索引值，考慮到 XOffset 的影響
+                    DrawTextInfo valueText = new DrawTextInfo($"Idx:{actualIndex}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                    valueText.Position = new Point(targetPoint.X - valueText.MidWidth, waveformRect.Bottom);
+                    context.DrawText(valueText.FormattedText, valueText.Position);
+                }
+            }
             else
                 isPointInWaveformRect = false;
 
             // Draw horizontal line
             if (targetPoint.Y >= waveformRect.Top && targetPoint.Y <= waveformRect.Bottom)
+            {
                 context.DrawLine(cursorPen, new Point(waveformRect.Left, targetPoint.Y), new Point(targetPoint.X, targetPoint.Y));
+                var yValueRange = MaxValue - MinValue;
+                var yHeight = waveformRect.Height * YScale;
+                var actualYHeight = YOffset + targetPoint.Y - waveformRect.Top;
+                var yHeightScale = (yHeight - actualYHeight) / yHeight;
+                var yValue = MinValue + yHeightScale * yValueRange;
+                DrawTextInfo valueText = new DrawTextInfo($"Val:{yValue:F2} V", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                valueText.Position = new Point(waveformRect.Left - valueText.Width, targetPoint.Y - valueText.MidHeight);
+                context.DrawText(valueText.FormattedText, valueText.Position);
+            }
             else
                 isPointInWaveformRect = false;
 
@@ -494,6 +527,23 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
 
             _fpsStopwatch.Restart();
+        }
+
+        private static int FindNearestIndex(SKPoint[] points, SKPoint target)
+        {
+            int idx = Array.BinarySearch(points, target,
+        Comparer<SKPoint>.Create((a, b) => a.X.CompareTo(b.X)));
+
+            if (idx >= 0) return idx; // X 精確命中
+
+            int upper = ~idx;
+            if (upper == 0) return 0;
+            if (upper >= points.Length) return points.Length - 1;
+
+            int lower = upper - 1;
+            return (target.X - points[lower].X) <= (points[upper].X - target.X)
+                ? lower
+                : upper;
         }
 
         private static SKPoint[] BuildScopeWaveformPoints(ReadOnlySpan<float> values, int pointCount, SKRect rect,
@@ -755,6 +805,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         public double MidHeight => Height * 0.5;
 
         public double Width => FormattedText.Width;
+
+        public double MidWidth => Width * 0.5;
 
         public Point Position { get; set; }
 
