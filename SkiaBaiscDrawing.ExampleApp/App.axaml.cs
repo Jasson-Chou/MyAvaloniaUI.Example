@@ -1,6 +1,9 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using SkiaBasicDrawing.ExampleApp.Models;
 using SkiaBasicDrawing.ExampleApp.ViewModels;
 using SkiaBasicDrawing.ExampleApp.Views;
 
@@ -15,11 +18,17 @@ namespace SkiaBasicDrawing.ExampleApp
 
         public override void OnFrameworkInitializationCompleted()
         {
+            var services = new ServiceCollection();
+            services.AddTransient<IUiTimer, DefaultUiTimer>();
+            services.AddSingleton<MainViewModel>();
+
+            Ioc.Default.ConfigureServices(services.BuildServiceProvider());
+
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 desktop.MainWindow = new MainWindow
                 {
-                    DataContext = new MainViewModel(),
+                    DataContext = Ioc.Default.GetRequiredService<MainViewModel>(),
                 };
             }
 

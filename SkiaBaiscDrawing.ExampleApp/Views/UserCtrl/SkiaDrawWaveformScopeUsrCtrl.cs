@@ -359,7 +359,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             {
                 if(_downSamplingFormattedText is null)
                 {
-                    _downSamplingFormattedText = new FormattedText("Downsampling...", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                    _downSamplingFormattedText = new FormattedText("#Downsampling mode", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
                 }
                 context.DrawText(_downSamplingFormattedText, downSamplingDisplayPoint);
             }
@@ -543,6 +543,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             if (idx >= 0) return idx; // X 精確命中
 
+            // ref: https://jasson-chou-note.notion.site/C-Array-BinarySearch-Net-BinarySearch-3b1c3bd17136801aa46deb5d175c8062
             int upper = ~idx;
             if (upper == 0) return 0;
             if (upper >= points.Length) return points.Length - 1;

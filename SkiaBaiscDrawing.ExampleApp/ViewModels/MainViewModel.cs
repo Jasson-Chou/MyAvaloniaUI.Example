@@ -12,8 +12,9 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 {
     public partial class MainViewModel : ViewModelBase
     {
-        public MainViewModel()
+        public MainViewModel(IUiTimer uiTimer)
         {
+            _uiTimer = uiTimer;
             UserSetting = new UserSettingViewModel();
             if (Design.IsDesignMode)
             {
@@ -23,7 +24,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             {
                 UserSetting.PropertyChanged += UserSetting_PropertyChanged;
                 var sineGen = new SineGenerator(UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
-                _waveformSimulator = new WaveformSimService(sineGen, UserSetting.PointCount);
+                _waveformService = new WaveformSimService(sineGen, UserSetting.PointCount);
             }
         }
 
@@ -34,21 +35,21 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
                 case nameof(UserSetting.AutoScale):
                     if (UserSetting.AutoScale)
                     {
-                        _waveformSimulator.GetMinMax(out float min, out float max);
+                        _waveformService.GetMinMax(out float min, out float max);
                         UserSetting.MinValue = min;
                         UserSetting.MaxValue = max;
                     }
                     break;
             }
         }
-
-        private readonly DispatcherTimer _randerTimer = new DispatcherTimer();
-        private WaveformSimService _waveformSimulator;
+        
+        private readonly IUiTimer _uiTimer;
+        private WaveformSimService _waveformService;
 
         [ObservableProperty]
         private UserSettingViewModel _userSetting;
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanRun))]
         private void Run()
         {
             // Implement the logic to start the drawing process
@@ -56,24 +57,24 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             IsRunning = true;
             PointCount = UserSetting.PointCount;
             var sineGen = new SineGenerator(UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
-            _waveformSimulator = new WaveformSimService(sineGen, UserSetting.PointCount);
-            _waveformSimulator.Start();
+            _waveformService = new WaveformSimService(sineGen, UserSetting.PointCount);
+            _waveformService.Start();
 
-            _randerTimer.Tick += _randerTimer_Tick;
-            _randerTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / UserSetting.Fps);
-            _randerTimer.Start();
+            _uiTimer.Tick += _randerTimer_Tick;
+            _uiTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / UserSetting.Fps);
+            _uiTimer.Start();
         }
 
         private void _randerTimer_Tick(object? sender, System.EventArgs e)
         {
-            _waveformSimulator.Pull();
-            if (_waveformSimulator.GetMinMax(out float min, out float max) &&
+            _waveformService.Pull();
+            if (_waveformService.GetMinMax(out float min, out float max) &&
                 true == UserSetting.AutoScale)
             {
                 UserSetting.MinValue = min;
                 UserSetting.MaxValue = max;
             }
-            var values = _waveformSimulator.GetValues();
+            var values = _waveformService.GetValues();
 
             //// for avalonialist, we can use ReplaceAll to update the collection efficiently
             Items.Clear();
@@ -83,16 +84,29 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 
         }
 
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanStop))]
         private void Stop()
         {
-            _randerTimer.Stop();
-            _randerTimer.Tick -= _randerTimer_Tick;
-            _waveformSimulator.Stop();
+            _uiTimer.Stop();
+            _uiTimer.Tick -= _randerTimer_Tick;
+            _waveformService.Stop();
             IsRunning = false;
         }
 
+        private bool CanRun()
+        {
+            return !IsRunning;
+        }
+
+        private bool CanStop()
+        {
+            return IsRunning;
+        }
+
+
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(RunCommand))]
+        [NotifyCanExecuteChangedFor(nameof(StopCommand))]
         private bool _isRunning = false;
 
         [ObservableProperty]
