@@ -270,9 +270,42 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private int _skDrawGridVersion;
         private SkiaDrawGrid? _skiaDrawGrid;
 
+        private bool _isDownSampling = false;
+
+        private bool _showCursor = false;
+        private Point _pointerPosition;
+
+        protected override void OnPointerEntered(PointerEventArgs e)
+        {
+            base.OnPointerEntered(e);
+            _showCursor = true;
+            _pointerPosition = e.GetPosition(this);
+            InvalidateVisual();
+        }
+
         protected override void OnPointerMoved(PointerEventArgs e)
         {
             base.OnPointerMoved(e);
+            if(false == _showCursor)
+            {
+                return;
+            }
+            _pointerPosition = e.GetPosition(this);
+            InvalidateVisual();
+        }
+
+        protected override void OnPointerExited(PointerEventArgs e)
+        {
+            base.OnPointerExited(e);
+            _showCursor = false;
+            InvalidateVisual();
+        }
+
+        protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+        {
+            base.OnPointerCaptureLost(e);
+            _showCursor = false;
+            InvalidateVisual();
         }
 
         public override void Render(DrawingContext context)
@@ -281,6 +314,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             DrawWaveform(context);
 
             DrawGrid(context);
+
+            DrawCursor(context);
 
             DrawFpsInfo(context);
         }
@@ -296,7 +331,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 return;
 
             double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
-            bool isDownSampling = false;
+            
             if (PointCount > 0 && _cacheValues.Length > PointCount)
             {
                 _cacheValues = _cacheValues.AsSpan(_cacheValues.Length - PointCount).ToArray();
@@ -313,14 +348,14 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 SKPoint[] points = BuildScopeWaveformPoints(_cacheValues, PointCount,
                 _drawScopeWaveformLineRect,
-                MaxValue, MinValue, scaling, out isDownSampling, XOffset, YOffset, XScale, YScale);
+                MaxValue, MinValue, scaling, out _isDownSampling, XOffset, YOffset, XScale, YScale);
                 _skiaDrawWaveformLine = new SkiaDrawWaveformLine(points, _skiaWaveformLinePen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
 
             }
 
             context.Custom(_skiaDrawWaveformLine);
 
-            if(isDownSampling)
+            if(_isDownSampling)
             {
                 if(_downSamplingFormattedText is null)
                 {
@@ -387,6 +422,50 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _maxValueDrawText?.Draw(context);
             if (_minValueDrawText is not null && _drawScopeWaveformLineRect.Bottom >= actualMinValueTop)
                 _minValueDrawText?.Draw(context);
+        }
+
+        private void DrawCursor(DrawingContext context)
+        {
+            if(false == _showCursor)
+                return;
+
+            if (_skiaDrawWaveformLine is null) return;
+
+            var waveformRect = new Rect(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformWidth, DrawWaveformHeight);
+            var currPointerPosition = _pointerPosition;
+            if(false == waveformRect.Contains(currPointerPosition))
+                return;
+
+            var pointerXOffset = (float)(currPointerPosition.X - waveformRect.Left);
+            var points = _skiaDrawWaveformLine.Points;
+            var xStep = points.Length > 1 ? MathF.Abs(points[1].X - points[0].X) : float.NaN;
+            if (float.IsNaN(xStep)) return;
+
+            var index = (int)Math.Round(pointerXOffset / xStep);
+            if(points.Length == 0 || index < 0 || index >= points.Length) 
+                return;
+
+            var targetPoint = points[index];
+            var cursorPen = new Pen(Brushes.Red, 1.0) { DashStyle = DashStyle.Dash };
+            bool isPointInWaveformRect = true;
+            // Draw vertical line
+            if (targetPoint.X >= waveformRect.Left && targetPoint.X <= waveformRect.Right)
+                context.DrawLine(cursorPen, new Point(targetPoint.X, waveformRect.Top), new Point(targetPoint.X, waveformRect.Bottom));
+            else
+                isPointInWaveformRect = false;
+
+            // Draw horizontal line
+            if (targetPoint.Y >= waveformRect.Top && targetPoint.Y <= waveformRect.Bottom)
+                context.DrawLine(cursorPen, new Point(waveformRect.Left, targetPoint.Y), new Point(targetPoint.X, targetPoint.Y));
+            else
+                isPointInWaveformRect = false;
+
+            if (true == isPointInWaveformRect)
+            {
+                // Draw circle at the intersection point
+                var circleRadius = 4.0;
+                context.DrawEllipse(Brushes.Red, cursorPen, new Point(targetPoint.X, targetPoint.Y), circleRadius, circleRadius);
+            }
         }
 
         private void DrawFpsInfo(DrawingContext context)
@@ -531,6 +610,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             private readonly int _version;
             private readonly SkiaPen? _sKiaPen;
             private readonly SKRect _bounds;
+            
+            public SKPoint[] Points => _points;
             public int Version => _version;
 
             public Rect Bounds { get; }
