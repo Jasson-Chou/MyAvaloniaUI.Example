@@ -24,7 +24,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             {
                 UserSetting.PropertyChanged += UserSetting_PropertyChanged;
                 var sineGen = new SineGenerator(UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
-                _waveformRunService = new WaveformRunService(sineGen, UserSetting.PointCount);
+                _waveformRunService = new WaveformRunService(sineGen);
             }
         }
 
@@ -57,7 +57,11 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             IsRunning = true;
             PointCount = UserSetting.PointCount;
             var sineGen = new SineGenerator(UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
-            _waveformRunService = new WaveformRunService(sineGen, UserSetting.PointCount);
+            
+            if(_waveformRunService.BufferSize != UserSetting.PointCount)
+            {
+                _waveformRunService.SetBufferSize(UserSetting.PointCount);
+            }
             _waveformRunService.Start();
 
             _uiTimer.Tick += _randerTimer_Tick;
