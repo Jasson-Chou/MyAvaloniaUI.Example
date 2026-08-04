@@ -7,18 +7,38 @@ using System.Threading.Tasks;
 
 namespace SkiaBasicDrawing.ExampleApp.Models
 {
-    public class WaveformSimService
+    public interface IWaveformRunService
     {
-        public WaveformSimService(IWaveformSimulator simulator, int buffSize)
+        int BufferSize { get; }
+        void SetBufferSize(int newSize);
+        void Start();
+        void Pull();
+        void Stop();
+        bool GetMinMax(out float min, out float max);
+        float[] GetValues();
+    }
+
+
+    public class WaveformRunService : IWaveformRunService
+    {
+        public WaveformRunService(IWaveformSimulator simulator)
         {
             _simulator = simulator;
-            _queue = new DropOldestQueue<float>(buffSize);
+            _queue = new DropOldestQueue<float>();
         }
 
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private readonly IWaveformSimulator _simulator;
         private readonly DropOldestQueue<float> _queue;
         private TimeSpan _lastTime = TimeSpan.Zero;
+
+        public int BufferSize => _queue.Capacity;
+
+        public void SetBufferSize(int newSize)
+        {
+            _queue.SetCapacity(newSize);
+        }
+
         public void Start()
         {
             _lastTime = TimeSpan.Zero;

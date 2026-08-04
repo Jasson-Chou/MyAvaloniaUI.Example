@@ -9,19 +9,58 @@ namespace SkiaBasicDrawing.ExampleApp.Models
 {
     public sealed class DropOldestQueue<T> where T : INumber<T>
     {
-        private readonly T[] _buffer;
+        private T[] _buffer;
         private T[]? _cachedFull;   // Count == Capacity 時重複使用
         private int _head;          // 最舊元素位置
         private int _count;
         private readonly object _lock = new();
 
+        public DropOldestQueue() : this(1024) { }
+
         public DropOldestQueue(int capacity)
         {
+            if (capacity < 1)
+                throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity must be greater than 0.");
             _buffer = new T[capacity];
         }
 
         public int Count => _count;
         public int Capacity => _buffer.Length;
+
+
+        /// <summary>
+        /// 尚未驗證，待驗證中。
+        /// </summary>
+        /// <param name="newCapacity"></param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public void SetCapacity(int newCapacity)
+        {
+            if (newCapacity < 1)
+                throw new ArgumentOutOfRangeException(nameof(newCapacity), "Capacity must be greater than 0.");
+            lock (_lock)
+            {
+                if (newCapacity == Capacity)
+                    return;
+                _cachedFull = new T[newCapacity]; // 重新配置容量時，清除快取
+
+                T[] newBuffer = new T[newCapacity];
+
+                int copyCount = Math.Min(_count, newCapacity);
+
+                // first part
+                int firstPartStartIndex = (_count + _head - copyCount) % newCapacity;
+                int firstPartLength = _count - firstPartStartIndex - 1;
+                Array.Copy(_buffer, firstPartStartIndex, newBuffer, 0, firstPartLength);
+
+                // second part
+                int secondPartLength = copyCount - firstPartLength;
+                Array.Copy(_buffer, 0, newBuffer, firstPartLength, secondPartLength);
+
+                _buffer = newBuffer;
+                _count = copyCount;
+                _head = (firstPartLength + secondPartLength) % newCapacity;
+            }
+        }
 
         public void Enqueue(T item)
         {
