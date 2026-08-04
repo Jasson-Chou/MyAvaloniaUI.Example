@@ -48,7 +48,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
                 int copyCount = Math.Min(_count, newCapacity);
 
                 // first part
-                int firstPartStartIndex = (_count + _head - copyCount) % newCapacity;
+                int firstPartStartIndex = (_count + _head - copyCount) % Capacity;
                 int firstPartLength = _count - firstPartStartIndex - 1;
                 Array.Copy(_buffer, firstPartStartIndex, newBuffer, 0, firstPartLength);
 
