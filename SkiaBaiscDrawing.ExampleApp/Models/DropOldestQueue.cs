@@ -47,18 +47,24 @@ namespace SkiaBasicDrawing.ExampleApp.Models
 
                 int copyCount = Math.Min(_count, newCapacity);
 
-                // first part
-                int firstPartStartIndex = (_count + _head - copyCount) % Capacity;
-                int firstPartLength = _count - firstPartStartIndex;
-                Array.Copy(_buffer, firstPartStartIndex, newBuffer, 0, firstPartLength);
+                if(_count == Capacity)
+                {
+                    // first part
+                    int firstPartStartIndex = (_count + _head - copyCount) % Capacity;
+                    int firstPartLength = _count - firstPartStartIndex;
+                    Array.Copy(_buffer, firstPartStartIndex, newBuffer, 0, firstPartLength);
 
-                // second part
-                int secondPartLength = copyCount - firstPartLength;
-                Array.Copy(_buffer, 0, newBuffer, firstPartLength, secondPartLength);
-
+                    // second part
+                    int secondPartLength = copyCount - firstPartLength;
+                    Array.Copy(_buffer, 0, newBuffer, firstPartLength, secondPartLength);
+                }
+                else
+                {
+                    Array.Copy(_buffer, _count - copyCount, newBuffer, 0, copyCount);
+                }
                 _buffer = newBuffer;
                 _count = copyCount;
-                _head = (firstPartLength + secondPartLength) % newCapacity;
+                _head = 0;
             }
         }
 

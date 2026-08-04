@@ -14,27 +14,33 @@ namespace SkiaBasicDrawing.ExampleApp.Models.Tests
         [TestMethod()]
         public void SetCapacityTest()
         {
-            for (int capSize = 6; capSize < 10; capSize++)
+            for (int capSize = 6; capSize < 100; capSize++)
             {
                 int[] array = new int[capSize];
-                DropOldestQueue<int> dropOldestQueue = new DropOldestQueue<int>(capSize);
-
-                for (int i = 0; i < capSize; i++)
+                DropOldestQueue<int> smallpart_DropOldestQueue = new DropOldestQueue<int>(capSize);
+                DropOldestQueue<int> bigpart_DropOldestQueue = new DropOldestQueue<int>(capSize);
+                int addCount = capSize - 1;
+                for (int i = 0; i < addCount; i++)
                 {
-                    dropOldestQueue.Enqueue(i);
+                    smallpart_DropOldestQueue.Enqueue(i);
+                    bigpart_DropOldestQueue.Enqueue(i);
                 }
 
-                dropOldestQueue.CopyTo(array);
+                smallpart_DropOldestQueue.CopyTo(array);
 
-                int newCapacity = capSize / 3;
+                int newSmallCapacity = capSize / 3;
+                int newBigCapacity = capSize * 3;
 
-                dropOldestQueue.SetCapacity(newCapacity);
+                smallpart_DropOldestQueue.SetCapacity(newSmallCapacity);
+                bigpart_DropOldestQueue.SetCapacity(newBigCapacity);
 
-                var newArray = dropOldestQueue.ToArray();
+                var small_newArray = smallpart_DropOldestQueue.ToArray();
 
-                for (int i = 0; i < newCapacity; i++)
+                int expectedCount = Math.Min(capSize, newSmallCapacity);
+
+                for (int i = 0; i < expectedCount; i++)
                 {
-                    Assert.AreEqual(newArray[i], array[capSize - newCapacity + i]);
+                    Assert.AreEqual(small_newArray[i], array[addCount - expectedCount + i]);
                 }
             }
         }
