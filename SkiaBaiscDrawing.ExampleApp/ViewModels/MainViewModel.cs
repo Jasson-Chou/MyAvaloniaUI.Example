@@ -140,9 +140,6 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         [ObservableProperty]
         private AvaloniaList<float> _items = new AvaloniaList<float>();
 
-        [ObservableProperty]
-        private TimeSpan _actualFps = TimeSpan.Zero;
-
     }
 
     public partial class SettingViewModelBase: ViewModelBase
