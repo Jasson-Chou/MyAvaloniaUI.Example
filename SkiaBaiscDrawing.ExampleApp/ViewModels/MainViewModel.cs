@@ -12,6 +12,14 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 {
     public partial class MainViewModel : ViewModelBase
     {
+        public MainViewModel(): this(null!, null!, null!)
+        {
+            if(false == Design.IsDesignMode)
+            {
+                throw new InvalidOperationException("This constructor is only for design time.");
+            }
+        }
+
         public MainViewModel(IUiTimer uiTimer, IWaveformRunService waveformRunService, IWaveformGenFactory waveformGenFactory)
         {
             _uiTimer = uiTimer;
@@ -128,10 +136,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 
 
         [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(RunCommand))]
-        [NotifyCanExecuteChangedFor(nameof(StopCommand))]
-        [NotifyCanExecuteChangedFor(nameof(GenerateWaveformCommand))]
-        [NotifyCanExecuteChangedFor(nameof(ClearItemsCommand))]
+        [NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(StopCommand), nameof(GenerateWaveformCommand), nameof(ClearItemsCommand))]
         private bool _isRunning = false;
 
         [ObservableProperty]

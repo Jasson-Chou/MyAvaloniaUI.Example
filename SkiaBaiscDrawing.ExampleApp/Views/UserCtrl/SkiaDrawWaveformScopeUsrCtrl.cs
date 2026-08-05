@@ -233,11 +233,13 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
         private readonly float _drawWaveformMaxMinHeightMarginRate = 0.1f; // 10% margin
         private readonly float _drawWaveformMaxMinWidthMarginRate = 0.025f; // 2.5% margin
+        private readonly float _drawCursorHighlightTextMarginLength = 5.0f;
         private float DrawGridRectTop { get; set; }
         private float DrawGridRectLeft { get; set; }
         private float DrawTimeBarHeight { get; set; }
         private float DrawGridWidth => (float)this.Bounds.Width - DrawGridRectLeft;
         private float DrawGridHeight => (float)this.Bounds.Height - DrawGridRectTop - DrawTimeBarHeight;
+        private float DrawGridBottom => DrawGridRectTop + DrawGridHeight;
 
         private float DrawWaveformLineTop => DrawGridRectTop + (DrawGridHeight * _drawWaveformMaxMinHeightMarginRate * 0.5f);
         private float DrawWaveformLineLeft => DrawGridRectLeft;
@@ -465,21 +467,15 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             // Draw vertical line
             if (targetPoint.X >= waveformRect.Left && targetPoint.X <= waveformRect.Right)
             { 
-                context.DrawLine(cursorPen, new Point(targetPoint.X, waveformRect.Top), new Point(targetPoint.X, waveformRect.Bottom));
-                if(false == _isDownSampling)
-                {
-                    var actualIndex = index + (int)MathF.Round(XOffset / xStep); // 計算實際的索引值，考慮到 XOffset 的影響
-                    DrawTextInfo valueText = new DrawTextInfo($"Idx:{actualIndex}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
-                    valueText.Position = new Point(targetPoint.X - valueText.MidWidth, waveformRect.Bottom);
-                    context.DrawText(valueText.FormattedText, valueText.Position);
-                }
-                else
-                {
-                    var actualIndex = _skiaDrawWaveformLine.ActualIndexes[index];
-                    DrawTextInfo valueText = new DrawTextInfo($"Idx:{actualIndex}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
-                    valueText.Position = new Point(targetPoint.X - valueText.MidWidth, waveformRect.Bottom);
-                    context.DrawText(valueText.FormattedText, valueText.Position);
-                }
+                context.DrawLine(cursorPen, new Point(targetPoint.X, waveformRect.Top), new Point(targetPoint.X, DrawGridBottom));
+
+                int actualIndex = _skiaDrawWaveformLine.ActualIndexes[index];
+                DrawTextInfo valueText = new DrawTextInfo($"Idx:{actualIndex}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                float midDHTL = _drawCursorHighlightTextMarginLength * 0.5f;
+                valueText.Position = new Point(targetPoint.X - valueText.MidWidth, DrawGridBottom + midDHTL);
+
+                context.DrawRectangle(Brushes.Orange, null, new Rect(valueText.Position.X - midDHTL, valueText.Position.Y - midDHTL, valueText.Width + midDHTL, valueText.Height + midDHTL));
+                context.DrawText(valueText.FormattedText, valueText.Position);
             }
             else
                 isPointInWaveformRect = false;
@@ -859,7 +855,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             _strokeWidth = strokeWidth;
             _sKPaint = new SKPaint
             {
-                Color = new SKColor(_color.R, _color.G, _color.B, _color.A),
+                Color = _color.ToSKColor(),
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = _strokeWidth,
                 IsAntialias = true,
