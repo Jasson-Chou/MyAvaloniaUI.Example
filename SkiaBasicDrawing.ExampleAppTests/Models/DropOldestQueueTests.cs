@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace SkiaBasicDrawing.ExampleApp.Models.Tests
 {
+    // reference: https://jasson-chou-note.notion.site/C-3b3c3bd1713680c5b8c9f44acfbcaf77
     [TestClass()]
     public class DropOldestQueueTests
     {

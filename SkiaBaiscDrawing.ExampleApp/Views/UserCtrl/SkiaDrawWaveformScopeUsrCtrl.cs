@@ -463,6 +463,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             targetPoint = points[index];
             var cursorPen = new Pen(Brushes.Red, 1.0) { DashStyle = DashStyle.Dash };
+            float midDHTL = _drawCursorHighlightTextMarginLength * 0.5f;
             bool isPointInWaveformRect = true;
             // Draw vertical line
             if (targetPoint.X >= waveformRect.Left && targetPoint.X <= waveformRect.Right)
@@ -471,10 +472,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 int actualIndex = _skiaDrawWaveformLine.ActualIndexes[index];
                 DrawTextInfo valueText = new DrawTextInfo($"Idx:{actualIndex}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
-                float midDHTL = _drawCursorHighlightTextMarginLength * 0.5f;
-                valueText.Position = new Point(targetPoint.X - valueText.MidWidth, DrawGridBottom + midDHTL);
+                
+                valueText.Position = new Point(targetPoint.X - valueText.MidWidth, DrawGridBottom + _drawCursorHighlightTextMarginLength);
 
-                context.DrawRectangle(Brushes.Orange, null, new Rect(valueText.Position.X - midDHTL, valueText.Position.Y - midDHTL, valueText.Width + midDHTL, valueText.Height + midDHTL));
+                context.DrawRectangle(Brushes.Orange, null, new Rect(valueText.Position.X - midDHTL, valueText.Position.Y , valueText.Width + _drawCursorHighlightTextMarginLength, valueText.Height + midDHTL));
                 context.DrawText(valueText.FormattedText, valueText.Position);
             }
             else
@@ -490,7 +491,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 var yHeightScale = (yHeight - actualYHeight) / yHeight;
                 var yValue = MinValue + yHeightScale * yValueRange;
                 DrawTextInfo valueText = new DrawTextInfo($"Val:{yValue:F2} V", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
-                valueText.Position = new Point(waveformRect.Left - valueText.Width, targetPoint.Y - valueText.MidHeight);
+                
+                valueText.Position = new Point(waveformRect.Left - valueText.Width - _drawCursorHighlightTextMarginLength, targetPoint.Y - valueText.MidHeight);
+
+                context.DrawRectangle(Brushes.Orange, null, new Rect(valueText.Position.X - midDHTL, valueText.Position.Y, valueText.Width + midDHTL, valueText.Height));
                 context.DrawText(valueText.FormattedText, valueText.Position);
             }
             else
