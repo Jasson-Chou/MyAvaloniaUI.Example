@@ -12,7 +12,9 @@ namespace SkiaBasicDrawing.ExampleApp.Models.Tests
     public class DropOldestQueueTests
     {
         [TestMethod()]
-        public void SetCapacityToSmallTest()
+        [DataRow(true)]
+        [DataRow(false)]
+        public void SetCapacityToBiggerOrSmallerTest(bool biggerOrSmaller)
         {
             for (int capSize = 6; capSize < 100; capSize++)
             {
@@ -29,7 +31,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models.Tests
 
                     dropOldestQueue.CopyTo(array);
 
-                    int newCapacity = capSize / 3;
+                    int newCapacity = biggerOrSmaller ? capSize * 2 : capSize / 3;
 
                     try
                     {
@@ -43,7 +45,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models.Tests
 
                     var newArray = dropOldestQueue.ToArray();
 
-                    int expectedCount = Math.Min(fillCount, newCapacity);
+                    int expectedCount = Math.Min(actualEnqueueCount, newCapacity);
 
                     for (int i = 0; i < expectedCount; i++)
                     {
@@ -54,13 +56,19 @@ namespace SkiaBasicDrawing.ExampleApp.Models.Tests
                             int arrayValue = array[actualArrIdx];
 
                             Assert.AreEqual(newArrayValue, arrayValue,
-                                $"capSize:{capSize}, fillCount:{fillCount}, expectedCount:{expectedCount}, newCapacity:{newCapacity}, newArray:{i}{Environment.NewLine}" +
+                                $"capSize:{capSize}, fillCount:{fillCount}, " +
+                                $"expectedCount:{expectedCount}, newCapacity:{newCapacity}, newArray:{i}{Environment.NewLine}" +
                                 $"{nameof(array)}:{string.Join(",", array)}{Environment.NewLine}" +
                                 $"{nameof(newArray)}:{string.Join(",", newArray)}");
                         }
-                        catch
+                        catch(Exception e)
                         {
-                            Assert.Fail($"Actual Arr Index: {actualArrIdx}");
+                            Assert.Fail($"Actual Arr Index: {actualArrIdx}{Environment.NewLine}" +
+                                $"capSize:{capSize}, fillCount:{fillCount}, actualEnqueueCount:{actualEnqueueCount}, " +
+                                $"expectedCount:{expectedCount}, newCapacity:{newCapacity}, newArray[{i}]{Environment.NewLine}" +
+                                $"{nameof(array)}:{string.Join(",", array)}{Environment.NewLine}" +
+                                $"{nameof(newArray)}:{string.Join(",", newArray)}{Environment.NewLine}" +
+                                $"Exception: {e}");
                         }
                         
                     }
