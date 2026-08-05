@@ -20,6 +20,8 @@ namespace SkiaBasicDrawing.ExampleApp
         {
             var services = new ServiceCollection();
             services.AddTransient<IUiTimer, DefaultUiTimer>();
+            services.AddTransient<IWaveformRunService, WaveformRunService>();
+            services.AddTransient<IWaveformGenFactory, WaveformGenFactory>();
             services.AddSingleton<MainViewModel>();
 
             Ioc.Default.ConfigureServices(services.BuildServiceProvider());

@@ -61,6 +61,13 @@ namespace SkiaBasicDrawing.ExampleApp.Models
             return samples;
         }
 
+        public float[] GenerateF(int count)
+        {
+            var samples = new float[count];
+            Fill(samples);
+            return samples;
+        }
+
         /// <summary>將相位重置歸零。</summary>
         public void Reset() => _phase = 0;
 

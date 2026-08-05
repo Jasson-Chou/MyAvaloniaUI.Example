@@ -12,9 +12,11 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 {
     public partial class MainViewModel : ViewModelBase
     {
-        public MainViewModel(IUiTimer uiTimer)
+        public MainViewModel(IUiTimer uiTimer, IWaveformRunService waveformRunService, IWaveformGenFactory waveformGenFactory)
         {
             _uiTimer = uiTimer;
+            _waveformRunService = waveformRunService;
+            _waveformGenFactory = waveformGenFactory;
             UserSetting = new UserSettingViewModel();
             if (Design.IsDesignMode)
             {
@@ -23,8 +25,6 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             else
             {
                 UserSetting.PropertyChanged += UserSetting_PropertyChanged;
-                var sineGen = new SineGenerator(UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
-                _waveformRunService = new WaveformRunService(sineGen);
             }
         }
 
@@ -44,7 +44,8 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         }
         
         private readonly IUiTimer _uiTimer;
-        private WaveformRunService _waveformRunService;
+        private readonly IWaveformRunService _waveformRunService;
+        private readonly IWaveformGenFactory _waveformGenFactory;
 
         [ObservableProperty]
         private UserSettingViewModel _userSetting;
@@ -56,12 +57,14 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             Items.Clear();
             IsRunning = true;
             PointCount = UserSetting.PointCount;
-            var sineGen = new SineGenerator(UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
-            
-            if(_waveformRunService.BufferSize != UserSetting.PointCount)
+            var waveformGen = _waveformGenFactory.Create(WaveformType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
+            _waveformRunService.ResetSimulator(waveformGen);
+
+            if (_waveformRunService.BufferSize != UserSetting.PointCount)
             {
                 _waveformRunService.SetBufferSize(UserSetting.PointCount);
             }
+
             _waveformRunService.Start();
 
             _uiTimer.Tick += _randerTimer_Tick;
@@ -97,6 +100,22 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             IsRunning = false;
         }
 
+        [RelayCommand(CanExecute = nameof(CanRun))]
+        private void GenerateWaveform()
+        {
+            PointCount = UserSetting.PointCount;
+            var waveformGen = _waveformGenFactory.Create(WaveformType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
+            var buffer = waveformGen.GenerateF(PointCount);
+            Items.Clear();
+            Items.AddRange(buffer);
+        }
+
+        [RelayCommand(CanExecute = nameof(CanRun))]
+        private void ClearItems()
+        {
+            Items.Clear();
+        }
+
         private bool CanRun()
         {
             return !IsRunning;
@@ -111,6 +130,8 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(RunCommand))]
         [NotifyCanExecuteChangedFor(nameof(StopCommand))]
+        [NotifyCanExecuteChangedFor(nameof(GenerateWaveformCommand))]
+        [NotifyCanExecuteChangedFor(nameof(ClearItemsCommand))]
         private bool _isRunning = false;
 
         [ObservableProperty]

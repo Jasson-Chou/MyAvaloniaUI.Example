@@ -9,5 +9,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
     public interface IWaveformSimulator
     {
         float[] GenerateF(TimeSpan startTime, TimeSpan duration);
+
+        float[] GenerateF(int count);
     }
 }

@@ -12,35 +12,58 @@ namespace SkiaBasicDrawing.ExampleApp.Models.Tests
     public class DropOldestQueueTests
     {
         [TestMethod()]
-        public void SetCapacityTest()
+        public void SetCapacityToSmallTest()
         {
             for (int capSize = 6; capSize < 100; capSize++)
             {
                 int[] array = new int[capSize];
-                DropOldestQueue<int> smallpart_DropOldestQueue = new DropOldestQueue<int>(capSize);
-                DropOldestQueue<int> bigpart_DropOldestQueue = new DropOldestQueue<int>(capSize);
-                int addCount = capSize - 1;
-                for (int i = 0; i < addCount; i++)
+                for(int fillCount = 3; fillCount < capSize * 4; fillCount++)
                 {
-                    smallpart_DropOldestQueue.Enqueue(i);
-                    bigpart_DropOldestQueue.Enqueue(i);
-                }
+                    DropOldestQueue<int> dropOldestQueue = new DropOldestQueue<int>(capSize);
+                    for (int i = 0; i < fillCount; i++)
+                    {
+                        dropOldestQueue.Enqueue(i);
+                    }
+                    
+                    int actualEnqueueCount = dropOldestQueue.Count;
 
-                smallpart_DropOldestQueue.CopyTo(array);
+                    dropOldestQueue.CopyTo(array);
 
-                int newSmallCapacity = capSize / 3;
-                int newBigCapacity = capSize * 3;
+                    int newCapacity = capSize / 3;
 
-                smallpart_DropOldestQueue.SetCapacity(newSmallCapacity);
-                bigpart_DropOldestQueue.SetCapacity(newBigCapacity);
+                    try
+                    {
+                        dropOldestQueue.SetCapacity(newCapacity);
+                    }
+                    catch
+                    {
+                        Assert.Fail($"capSize:{capSize}, fillCount:{fillCount}, newCapacity:{newCapacity}{Environment.NewLine}" +
+                            $"array:{string.Join(",", array)}");
+                    }
 
-                var small_newArray = smallpart_DropOldestQueue.ToArray();
+                    var newArray = dropOldestQueue.ToArray();
 
-                int expectedCount = Math.Min(capSize, newSmallCapacity);
+                    int expectedCount = Math.Min(fillCount, newCapacity);
 
-                for (int i = 0; i < expectedCount; i++)
-                {
-                    Assert.AreEqual(small_newArray[i], array[addCount - expectedCount + i]);
+                    for (int i = 0; i < expectedCount; i++)
+                    {
+                        int actualArrIdx = actualEnqueueCount - expectedCount + i;
+                        try
+                        {
+                            int newArrayValue = newArray[i];
+                            int arrayValue = array[actualArrIdx];
+
+                            Assert.AreEqual(newArrayValue, arrayValue,
+                                $"capSize:{capSize}, fillCount:{fillCount}, expectedCount:{expectedCount}, newCapacity:{newCapacity}, newArray:{i}{Environment.NewLine}" +
+                                $"{nameof(array)}:{string.Join(",", array)}{Environment.NewLine}" +
+                                $"{nameof(newArray)}:{string.Join(",", newArray)}");
+                        }
+                        catch
+                        {
+                            Assert.Fail($"Actual Arr Index: {actualArrIdx}");
+                        }
+                        
+                    }
                 }
             }
         }

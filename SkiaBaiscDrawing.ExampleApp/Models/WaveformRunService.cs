@@ -11,6 +11,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
     {
         int BufferSize { get; }
         void SetBufferSize(int newSize);
+        void ResetSimulator(IWaveformSimulator newSimulator);
         void Start();
         void Pull();
         void Stop();
@@ -21,6 +22,8 @@ namespace SkiaBasicDrawing.ExampleApp.Models
 
     public class WaveformRunService : IWaveformRunService
     {
+        public WaveformRunService() : this(new SineGenerator(1, 1000, 1)) { }
+
         public WaveformRunService(IWaveformSimulator simulator)
         {
             _simulator = simulator;
@@ -28,15 +31,20 @@ namespace SkiaBasicDrawing.ExampleApp.Models
         }
 
         private readonly Stopwatch _stopwatch = new Stopwatch();
-        private readonly IWaveformSimulator _simulator;
         private readonly DropOldestQueue<float> _queue;
         private TimeSpan _lastTime = TimeSpan.Zero;
+        private IWaveformSimulator _simulator;
 
         public int BufferSize => _queue.Capacity;
 
         public void SetBufferSize(int newSize)
         {
             _queue.SetCapacity(newSize);
+        }
+
+        public void ResetSimulator(IWaveformSimulator newSimulator)
+        {
+            _simulator = newSimulator;
         }
 
         public void Start()
@@ -50,6 +58,8 @@ namespace SkiaBasicDrawing.ExampleApp.Models
         {
             if(_stopwatch.Elapsed == _lastTime)
                 return;
+            if(_simulator is null) 
+                throw new InvalidOperationException("Simulator is not set.");
             var currentTime = _stopwatch.Elapsed;
             var duration = currentTime - _lastTime;
             var newSamples = _simulator.GenerateF(_lastTime, duration);

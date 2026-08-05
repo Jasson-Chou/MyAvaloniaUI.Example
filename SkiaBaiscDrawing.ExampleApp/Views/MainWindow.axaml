@@ -116,7 +116,15 @@
             
 
             <StackPanel                Grid.Row="10" Grid.Column="2" Orientation="Horizontal" Margin="0 5" HorizontalAlignment="Right">
-                <Button x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary"/>
+                <!--<Button x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary"/>-->
+                <SplitButton x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary">
+                    <SplitButton.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <MenuItem Header="Run Once" Command="{Binding GenerateWaveformCommand}"/>
+                            <MenuItem Header="Clear" Command="{Binding ClearItemsCommand}"/>
+                        </MenuFlyout>
+                    </SplitButton.Flyout>
+                </SplitButton>
                 <Button x:Name="stopButton" Content="Stop" Width="100" HorizontalContentAlignment="Center" Command="{Binding StopCommand}" Classes="primary"/>
             </StackPanel>
             
