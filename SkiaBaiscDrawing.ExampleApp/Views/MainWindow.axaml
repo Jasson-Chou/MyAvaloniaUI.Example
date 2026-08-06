@@ -48,6 +48,7 @@
                                               YScale="{Binding #yScaleSlider.Value}"
                                               MaxValue="{Binding UserSetting.MaxValue}"
                                               MinValue="{Binding UserSetting.MinValue}"
+                                              SampleRate="{Binding SampleRate}"
                                               PointCount="{Binding PointCount}"
                                               Items="{Binding Items}"
                                               WaveformLineColor="DarkOrange"

@@ -65,6 +65,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             Items.Clear();
             IsRunning = true;
             PointCount = UserSetting.PointCount;
+            SampleRate = UserSetting.SampleRate;
             var waveformGen = _waveformGenFactory.Create(WaveformType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
             _waveformRunService.ResetSimulator(waveformGen);
 
@@ -112,6 +113,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         private void GenerateWaveform()
         {
             PointCount = UserSetting.PointCount;
+            SampleRate = UserSetting.SampleRate;
             var waveformGen = _waveformGenFactory.Create(WaveformType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
             var buffer = waveformGen.GenerateF(PointCount);
             Items.Clear();
@@ -141,6 +143,9 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 
         [ObservableProperty]
         private int _pointCount = 1000;
+
+        [ObservableProperty]
+        private float _sampleRate = 1000.0f;
 
         [ObservableProperty]
         private AvaloniaList<float> _items = new AvaloniaList<float>();

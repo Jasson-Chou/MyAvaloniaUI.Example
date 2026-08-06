@@ -78,6 +78,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, int>(
                 nameof(PointCount), 2048);
 
+        public static readonly StyledProperty<double> SampleRateProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, double>(
+                nameof(SampleRate), double.NaN);
+
         public static readonly StyledProperty<IEnumerable?> ItemsProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IEnumerable?>(
                 nameof(Items), null);
@@ -113,7 +117,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 }
                 RebuildItemsCache();
             }
-            _skDrawWaveformLineVersion++;
+            if(change.Property != SampleRateProperty)
+                _skDrawWaveformLineVersion++;
             _skDrawGridVersion++;
 
         }
@@ -204,6 +209,12 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             set => SetValue(PointCountProperty, value);
         }
 
+        public double SampleRate
+        {
+            get => GetValue(SampleRateProperty);
+            set => SetValue(SampleRateProperty, value);
+        }
+
         public IEnumerable? Items
         {
             get => GetValue(ItemsProperty);
@@ -216,7 +227,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 MinValueProperty, MaxValueProperty, 
                 WaveformLineColorProperty, WaveformLineStrokeWidthProperty, 
                 XScaleProperty, YScaleProperty, XOffsetProperty, YOffsetProperty,
-                PointCountProperty, ItemsProperty);
+                PointCountProperty, SampleRateProperty, ItemsProperty);
         }
 
         protected override void OnInitialized()
@@ -471,7 +482,16 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 context.DrawLine(cursorPen, new Point(targetPoint.X, waveformRect.Top), new Point(targetPoint.X, DrawGridBottom));
 
                 int actualIndex = _skiaDrawWaveformLine.ActualIndexes[index];
-                DrawTextInfo valueText = new DrawTextInfo($"Idx:{actualIndex}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                DrawTextInfo valueText = null!;
+                if(double.IsNormal(SampleRate))
+                {
+                    var timeValue = actualIndex / SampleRate;
+                    valueText = new DrawTextInfo($"{timeValue} S", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                }
+                else
+                {
+                    valueText = new DrawTextInfo($"Idx:{actualIndex}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                }
                 
                 valueText.Position = new Point(targetPoint.X - valueText.MidWidth, DrawGridBottom + _drawCursorHighlightTextMarginLength);
 
