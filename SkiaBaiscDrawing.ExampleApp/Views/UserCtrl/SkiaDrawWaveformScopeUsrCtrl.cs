@@ -271,6 +271,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
         private readonly float _drawWaveformMaxMinHeightMarginRate = 0.1f; // 10% margin
         private readonly float _drawWaveformMaxMinWidthMarginRate = 0.025f; // 2.5% margin
+        private readonly float _drawWaveformLastPointPadding = 5.0f;
         private readonly float _drawCursorHighlightTextMarginLength = 5.0f;
         private float DrawGridRectTop { get; set; }
         private float DrawGridRectLeft { get; set; }
@@ -283,7 +284,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private float DrawWaveformLineTop => DrawGridRectTop + (DrawGridHeight * _drawWaveformMaxMinHeightMarginRate * 0.5f);
         private float DrawWaveformLineLeft => DrawGridRectLeft;
         private float DrawWaveformHeight => DrawGridHeight * (1 - _drawWaveformMaxMinHeightMarginRate);
-        private float DrawWaveformWidth => DrawGridWidth;
+        private float DrawWaveformWidth => DrawGridWidth - _drawWaveformLastPointPadding;
 
         private float DefaultDrawGridMaxValueTop => DrawWaveformLineTop;
         private float DefaultDrawGridMinValueTop => DefaultDrawGridMaxValueTop + DrawWaveformHeight;
@@ -395,7 +396,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 var (points, actualIndexes) = BuildScopeWaveformPoints(_cacheValues, PointCount,
                 _drawScopeWaveformLineRect,
                 MaxValue, MinValue, scaling, out _xStep, out _isDownSampling, XOffset, YOffset, XScale, YScale);
-                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(points, actualIndexes, _skiaWaveformLinePen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
+                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(points, 
+                    actualIndexes, _skiaWaveformLinePen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
 
             }
 
@@ -514,12 +516,12 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             if (_skiaDrawWaveformLine is null) return;
 
-            var waveformRect = new Rect(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformWidth, DrawWaveformHeight);
+            var gridRect = new Rect(DrawWaveformLineLeft, DrawWaveformLineTop, DrawGridWidth, DrawWaveformHeight);
             var currPointerPosition = _pointerPosition;
-            if(false == waveformRect.Contains(currPointerPosition))
+            if(false == gridRect.Contains(currPointerPosition))
                 return;
 
-            var pointerXOffset = (float)(currPointerPosition.X - waveformRect.Left);
+            var pointerXOffset = (float)(currPointerPosition.X - gridRect.Left);
             var points = _skiaDrawWaveformLine.Points;
             var xStep = points.Length > 1 ? MathF.Abs(points[1].X - points[0].X) : float.NaN;
             if (float.IsNaN(xStep)) return;
@@ -547,9 +549,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             float midDHTL = _drawCursorHighlightTextMarginLength * 0.5f;
             bool isPointInWaveformRect = true;
             // Draw vertical line
-            if (targetPoint.X >= waveformRect.Left && targetPoint.X <= waveformRect.Right)
+            if (targetPoint.X >= gridRect.Left && targetPoint.X <= gridRect.Right)
             { 
-                context.DrawLine(cursorPen, new Point(targetPoint.X, waveformRect.Top), new Point(targetPoint.X, DrawGridBottom));
+                context.DrawLine(cursorPen, new Point(targetPoint.X, gridRect.Top), new Point(targetPoint.X, DrawGridBottom));
 
                 int actualIndex = _skiaDrawWaveformLine.ActualIndexes[index];
                 DrawTextInfo valueText = null!;
@@ -572,17 +574,17 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 isPointInWaveformRect = false;
 
             // Draw horizontal line
-            if (targetPoint.Y >= waveformRect.Top && targetPoint.Y <= waveformRect.Bottom)
+            if (targetPoint.Y >= gridRect.Top && targetPoint.Y <= gridRect.Bottom)
             {
-                context.DrawLine(cursorPen, new Point(waveformRect.Left, targetPoint.Y), new Point(targetPoint.X, targetPoint.Y));
+                context.DrawLine(cursorPen, new Point(gridRect.Left, targetPoint.Y), new Point(targetPoint.X, targetPoint.Y));
                 var yValueRange = MaxValue - MinValue;
-                var yHeight = waveformRect.Height * YScale;
-                var actualYHeight = YOffset + targetPoint.Y - waveformRect.Top;
+                var yHeight = gridRect.Height * YScale;
+                var actualYHeight = YOffset + targetPoint.Y - gridRect.Top;
                 var yHeightScale = (yHeight - actualYHeight) / yHeight;
                 var yValue = MinValue + yHeightScale * yValueRange;
                 DrawTextInfo valueText = new DrawTextInfo($"Val:{yValue:F2} V", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
                 
-                valueText.Position = new Point(waveformRect.Left - valueText.Width - _drawCursorHighlightTextMarginLength, targetPoint.Y - valueText.MidHeight);
+                valueText.Position = new Point(gridRect.Left - valueText.Width - _drawCursorHighlightTextMarginLength, targetPoint.Y - valueText.MidHeight);
 
                 context.DrawRectangle(Brushes.Orange, null, new Rect(valueText.Position.X - midDHTL, valueText.Position.Y, valueText.Width + midDHTL, valueText.Height));
                 context.DrawText(valueText.FormattedText, valueText.Position);
@@ -670,20 +672,21 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             if (pointCount > 0)
             {
-                xStep = (float)(width * xScale * renderScaling / (pointCount - 1)); // 計算每個資料點的寬度
+                xStep = (float)(width * xScale * renderScaling / (pointCount - 1)); // 計算寬度，當固定點數時，使用 pointCount 來計算 xStep
             }
             else
             {
-                xStep = (float)(width * xScale * renderScaling / (n - 1)); // 計算每個資料點的寬度
+                xStep = (float)(width * xScale * renderScaling / (n - 1)); // 計算寬度，適合動態點數，使用 n 來計算 xStep
             }
 
             int startIndex = xOffset > 0 ? (int)(xOffset / xStep) : 0;
-            int destCount = (int)(canShowColumns / xStep);
-            
+            int endIndex = Math.Min(n - 1, startIndex + (int)Math.Ceiling(width * renderScaling / xStep));
+            int destCount = endIndex - startIndex + 1;
+
 
             if (destCount <= canShowColumns * 2)
             {
-                destCount = Math.Min(destCount, n - startIndex);
+                //destCount = Math.Min(destCount, n - startIndex);
                 SKPoint[] sKPoints = new SKPoint[destCount];
                 int[] actualIndexes = new int[destCount];
                 float x = left;
@@ -728,19 +731,22 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                         }
                     }
 
+                    float cLPosX = left + ((cLIdx - startIndex) * xStep);
+                    float cHPosX = left + ((cHIdx - startIndex) * xStep);
+
                     if (cLIdx < cHIdx)
                     {
                         actualIndexes[sKPointIdx] = cLIdx;
-                        sKPoints[sKPointIdx++] = new SKPoint(left + (cLIdx * xStep), getYValue(cLValue));
+                        sKPoints[sKPointIdx++] = new SKPoint(cLPosX, getYValue(cLValue));
                         actualIndexes[sKPointIdx] = cHIdx;
-                        sKPoints[sKPointIdx++] = new SKPoint(left + (cHIdx * xStep), getYValue(cHValue));
+                        sKPoints[sKPointIdx++] = new SKPoint(cHPosX, getYValue(cHValue));
                     }
                     else
                     {
                         actualIndexes[sKPointIdx] = cHIdx;
-                        sKPoints[sKPointIdx++] = new SKPoint(left + (cHIdx * xStep), getYValue(cHValue));
+                        sKPoints[sKPointIdx++] = new SKPoint(cHPosX, getYValue(cHValue));
                         actualIndexes[sKPointIdx] = cLIdx;
-                        sKPoints[sKPointIdx++] = new SKPoint(left + (cLIdx * xStep), getYValue(cLValue));
+                        sKPoints[sKPointIdx++] = new SKPoint(cLPosX, getYValue(cLValue));
                     }
 
                 }
