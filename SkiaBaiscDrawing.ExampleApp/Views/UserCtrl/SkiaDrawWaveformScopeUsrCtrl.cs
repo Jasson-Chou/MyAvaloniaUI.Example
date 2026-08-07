@@ -88,9 +88,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, double>(
                 nameof(LabelInterval), double.NaN);
 
-        public static readonly StyledProperty<double> TickSpacingProperty =
+        public static readonly StyledProperty<double> TickSpacingScaleProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, double>(
-                nameof(TickSpacing), 1.0);
+                nameof(TickSpacingScale), 1.0);
 
         public static readonly StyledProperty<IEnumerable?> ItemsProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IEnumerable?>(
@@ -101,7 +101,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         {
             base.OnPropertyChanged(change);
 
-            if (change.Property != SampleRateProperty && change.Property != LabelIntervalProperty && change.Property != TickSpacingProperty)
+            if (change.Property != SampleRateProperty && change.Property != LabelIntervalProperty && change.Property != TickSpacingScaleProperty)
                 _skDrawWaveformLineVersion++;
 
             if (change.Property != YOffsetProperty && change.Property != YScaleProperty)
@@ -112,8 +112,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if (change.Property == XScaleProperty)
             {
                 double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
-                float xStep = (float)(DrawGridWidth * XScale * scaling / (_cacheValues.Length - 1)); // 計算每個資料點的寬度
-                MaxXOffset = Math.Max(0.0f, (_cacheValues.Length - 1) * xStep - (float)DrawGridWidth); // 計算新的最大 XOffset
+                int n = PointCount > 0 ? PointCount : _cacheValues.Length;
+                float xStep = (float)(DrawWaveformWidth * XScale * scaling / (n - 1)); // 計算每個資料點的寬度
+                MaxXOffset = Math.Max(0.0f, (n - 1) * xStep - (float)DrawWaveformWidth); // 計算新的最大 XOffset
                 CoerceValue(XOffsetProperty); // 重新計算 XOffset 的值，確保它在新的範圍內 [呼叫'coerce']
             }
             else if(change.Property == YScaleProperty)
@@ -135,6 +136,14 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     _itemsNotifyCollectionChanged.CollectionChanged += Items_CollectionChanged;
                 }
                 RebuildItemsCache();
+            }
+            else if(change.Property == TickSpacingScaleProperty)
+            {
+                var value = (double)change.NewValue!;
+                if (value < 0.0 || value > 1.0)
+                {
+                    SetCurrentValue(TickSpacingScaleProperty, Math.Clamp(value, 0.0, 1.0));
+                }
             }
             
 
@@ -244,10 +253,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             set => SetValue(LabelIntervalProperty, value);
         }
 
-        public double TickSpacing
+        public double TickSpacingScale
         {
-            get => GetValue(TickSpacingProperty);
-            set => SetValue(TickSpacingProperty, value);
+            get => GetValue(TickSpacingScaleProperty);
+            set => SetValue(TickSpacingScaleProperty, value);
         }
 
         public IEnumerable? Items
@@ -264,7 +273,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 WaveformLineColorProperty, WaveformLineStrokeWidthProperty, 
                 XScaleProperty, YScaleProperty, XOffsetProperty, YOffsetProperty,
                 PointCountProperty, 
-                SampleRateProperty, LabelIntervalProperty, TickSpacingProperty, 
+                SampleRateProperty, LabelIntervalProperty, TickSpacingScaleProperty, 
                 ItemsProperty);
         }
 
@@ -279,6 +288,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private float[] _cacheValues = Array.Empty<float>();
         private SkiaPen _skiaWaveformLinePen = null!;
         private SkiaPen _skiaGridLinePen = null!;
+        private SkiaPen _skiaTimeAxisPen = null!;
 
 
         private readonly float _drawWaveformMaxMinHeightMarginRate = 0.1f; // 10% margin
@@ -372,7 +382,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             DrawGrid(context);
 
-            //DrawTimeAxis(context);
+            DrawTimeAxis(context);
 
             DrawCursor(context);
 
@@ -430,35 +440,39 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if (_skiaDrawWaveformLine is null) return;
             if (float.IsNaN(_xStep)) return;
 
-            _skiaGridLinePen = _skiaGridLinePen.CompareOrGet(Colors.Gray, 1.0f);
+            _skiaTimeAxisPen = _skiaTimeAxisPen.CompareOrGet(Colors.Red, 1.0f);
             if (_skiaDrawTimeAxis is null || _skiaDrawTimeAxis.Version != _skDrawTimeAxisVersion)
             {
                 float tickSpacingLineHeight = 5.0f;
                 float tickTop = DrawGridBottom - tickSpacingLineHeight * 0.5f;
                 //if (double.IsNormal(SampleRate) && double.IsNormal(LabelInterval) && double.IsNormal(TickSpacing))
+                if(double.IsNormal(TickSpacingScale) && TickSpacingScale != 0.0d)
                 {
-                    int perTickSpacingCount = (int)MathF.Ceiling((float)TickSpacing / _xStep);
-                    if(perTickSpacingCount == 0) perTickSpacingCount = 1;
-                    float firstTickX = _skiaDrawWaveformLine.Points.First().X;
-                    float lastTickX = _skiaDrawWaveformLine.Points.Last().X;
-                    int totalPointCount = (int)((lastTickX - firstTickX) / _xStep) + 1;
-                    int totalTickCount = (int)MathF.Ceiling((float)totalPointCount / perTickSpacingCount);
+                    //int perTickSpacingCount = 50;// TickSpacing > _xStep ? (int)MathF.Ceiling((float)TickSpacing / _xStep) : 1;
+                    //if(perTickSpacingCount == 0) perTickSpacingCount = 1;
+                    int firstTickXIndex = _skiaDrawWaveformLine.ActualIndexes.First();
+                    int lastTickXIndex = _skiaDrawWaveformLine.ActualIndexes.Last();
+                    int totalPointCount = lastTickXIndex - firstTickXIndex + 1;
+                    int totalTickCount = (int)(totalPointCount * TickSpacingScale);
+                    float perTickWidth = (float)totalPointCount / totalTickCount;
+                    float firstTickX = firstTickXIndex * _xStep - XOffset + DrawWaveformLineLeft;
                     SKPoint[] tickPoints = new SKPoint[totalTickCount * 2];
 
-                    for (int pidx = 0; pidx < totalTickCount; pidx++)
+                    for (int pidx = 1; pidx < totalTickCount; pidx++)
                     {
-                        int p1 = pidx * 2;
-                        int p2 = pidx * 2 + 1;
-                        float xOffset = firstTickX + pidx * perTickSpacingCount * _xStep;
-                        tickPoints[p1] = new SKPoint(xOffset, tickTop);
-                        tickPoints[p2] = new SKPoint(xOffset, tickTop + tickSpacingLineHeight);
+                        int p1 = (pidx - 1) * 2;
+                        int p2 = (pidx - 1) * 2 + 1;
+                        float pXOffset = firstTickX + pidx * perTickWidth;
+                        tickPoints[p1] = new SKPoint(pXOffset, tickTop);
+                        tickPoints[p2] = new SKPoint(pXOffset, tickTop + tickSpacingLineHeight);
                     }
                     _skiaDrawTimeAxis = new SkiaDrawTimeAxis(
-                        new SKRect(DrawGridRectLeft, tickTop, DrawGridWidth, (float)this.Bounds.Bottom), tickPoints, tickSpacingLineHeight, _skiaGridLinePen, _skDrawTimeAxisVersion);
+                        new SKRect(DrawGridRectLeft, tickTop, DrawGridRectLeft + DrawGridWidth, (float)this.Bounds.Bottom),
+                        tickPoints, tickSpacingLineHeight, _skiaTimeAxisPen, _skDrawTimeAxisVersion);
                 }
                 
             }
-            if(_skiaDrawTimeAxis is not null)
+            if(_skiaDrawTimeAxis is not null && TickSpacingScale != 0.0d)
                 context.Custom(_skiaDrawTimeAxis);
         }
 
@@ -702,14 +716,14 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 //destCount = Math.Min(destCount, n - startIndex);
                 SKPoint[] sKPoints = new SKPoint[destCount];
                 int[] actualIndexes = new int[destCount];
-                float x = left;
+
                 for (int i = 0; i < destCount && startIndex + i < n; i++)
                 {
                     int valueIndex = startIndex + i;
+                    float actualX = valueIndex * xStep - xOffset + left;
                     float y = getYValue(values[valueIndex]);
-                    sKPoints[i] = new SKPoint(x, y);
+                    sKPoints[i] = new SKPoint(actualX, y);
                     actualIndexes[i] = valueIndex;
-                    x += xStep;
                 }
                 isDownSampling = false;
                 return (sKPoints, actualIndexes);
@@ -878,7 +892,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 if (_sKiaPen is not null)
                 {
-                    canvas.DrawPoints(SKPointMode.Polygon, _tickPoints, _sKiaPen.SKiaPaint);
+                    canvas.DrawPoints(SKPointMode.Lines, _tickPoints, _sKiaPen.SKiaPaint);
                 }
                 canvas.Restore();
             }

@@ -44,6 +44,7 @@
         <usrCtrl:SkiaDrawWaveformScopeUsrCtrl x:Name="DrawLineControl" 
                                               XOffset="{Binding #xOffsetScrollBar.Value}"
                                               YOffset="{Binding #yOffsetScrollBar.Value}"
+                                              TickSpacingScale="{Binding #tickSpacingScaleSlider.Value}"
                                               XScale="{Binding #xScaleSlider.Value}"
                                               YScale="{Binding #yScaleSlider.Value}"
                                               MaxValue="{Binding UserSetting.MaxValue}"
@@ -59,7 +60,7 @@
         
 
         <Grid Grid.Row="0" Grid.Column="2" Grid.RowSpan="2"
-              ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto,*">
+              ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto,*">
             <Grid.Styles>
                 <Style Selector="TextBlock.align">
                     <Setter Property="Grid.Column" Value="0"/>
@@ -78,46 +79,52 @@
                 <NumericUpDown Value="{Binding #yScaleSlider.Value}" Classes="primary" FormatString="F2"/>
             </StackPanel>
 
-            <TextBlock Text="FPS:" Grid.Row="2" Classes="primary align"/>
-            <NumericUpDown x:Name="fpsNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="2" Grid.Column="2" Minimum="1" Maximum="144" Value="{Binding UserSetting.Fps}" Classes="primary" FormatString="F0"/>
+            <TextBlock Text="Tick Spacing Scale:" Grid.Row="2" Classes="primary align"/>
+            <StackPanel                Grid.Row="2" Grid.Column="2" Orientation="Horizontal">
+                <Slider x:Name="tickSpacingScaleSlider" Width="160" Minimum="0.0" Maximum="1.0" Value="0.1" />
+                <NumericUpDown Value="{Binding #tickSpacingScaleSlider.Value}" Classes="primary" FormatString="F3"/>
+            </StackPanel>
 
-            <TextBlock Text="Points:" Grid.Row="3" Classes="primary align"/>
-            <NumericUpDown x:Name="pointsNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="3" Grid.Column="2" Minimum="0" Maximum="1000000" Value="{Binding UserSetting.PointCount}" 
+            <TextBlock Text="FPS:" Grid.Row="3" Classes="primary align"/>
+            <NumericUpDown x:Name="fpsNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="3" Grid.Column="2" Minimum="1" Maximum="144" Value="{Binding UserSetting.Fps}" Classes="primary" FormatString="F0"/>
+
+            <TextBlock Text="Points:" Grid.Row="4" Classes="primary align"/>
+            <NumericUpDown x:Name="pointsNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="4" Grid.Column="2" Minimum="0" Maximum="1000000" Value="{Binding UserSetting.PointCount}" 
                            ParsingNumberStyle="Integer"
                            Classes="primary"/>
             
-            <TextBlock Text="Freq:" Grid.Row="4" Classes="primary align"/>
+            <TextBlock Text="Freq:" Grid.Row="5" Classes="primary align"/>
             <NumericUpDown x:Name="freqNumericUpDown" HorizontalAlignment="Stretch" 
-                           Grid.Row="4" Grid.Column="2" Minimum="1" Maximum="1000000" Value="{Binding UserSetting.Frequency}" 
+                           Grid.Row="5" Grid.Column="2" Minimum="1" Maximum="1000000" Value="{Binding UserSetting.Frequency}" 
                            InnerRightContent="Hz "
                            Classes="primary"/>
             
-            <TextBlock Text="Fs:" Grid.Row="5" Classes="primary align"/>
+            <TextBlock Text="Fs:" Grid.Row="6" Classes="primary align"/>
             <NumericUpDown x:Name="fsNumericUpDown" HorizontalAlignment="Stretch" 
-                           Grid.Row="5" Grid.Column="2" Minimum="1" Maximum="1000000" Value="{Binding UserSetting.SampleRate}" 
+                           Grid.Row="6" Grid.Column="2" Minimum="1" Maximum="1000000" Value="{Binding UserSetting.SampleRate}" 
                            InnerRightContent="Hz "
                            Classes="primary"/>
             
-            <TextBlock Text="Amplitude:" Grid.Row="6" Classes="primary align"/>
-            <NumericUpDown x:Name="amplitudeNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="6" Grid.Column="2" Value="{Binding UserSetting.Amplitude}" 
+            <TextBlock Text="Amplitude:" Grid.Row="7" Classes="primary align"/>
+            <NumericUpDown x:Name="amplitudeNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="7" Grid.Column="2" Value="{Binding UserSetting.Amplitude}" 
                            InnerRightContent="V "
                            Classes="primary"/>
             
-            <TextBlock Text="Auto Max/Min Scale:" Grid.Row="7" Classes="primary align"/>
-            <CheckBox x:Name="autoScaleCheckBox" HorizontalAlignment="Center" Grid.Row="7" Grid.Column="2" IsChecked="{Binding UserSetting.AutoScale}" Classes="primary"/>
+            <TextBlock Text="Auto Max/Min Scale:" Grid.Row="8" Classes="primary align"/>
+            <CheckBox x:Name="autoScaleCheckBox" HorizontalAlignment="Center" Grid.Row="8" Grid.Column="2" IsChecked="{Binding UserSetting.AutoScale}" Classes="primary"/>
             
-            <TextBlock Text="Max Value:" Grid.Row="8" Classes="primary align"/>
+            <TextBlock Text="Max Value:" Grid.Row="9" Classes="primary align"/>
             <NumericUpDown x:Name="maxValueNumericUpDown" HorizontalAlignment="Stretch" 
                            IsEnabled="{Binding !#autoScaleCheckBox.IsChecked}"
-                           Grid.Row="8" Grid.Column="2" Value="{Binding UserSetting.MaxValue}" InnerRightContent="V " Classes="primary"/>
+                           Grid.Row="9" Grid.Column="2" Value="{Binding UserSetting.MaxValue}" InnerRightContent="V " Classes="primary"/>
             
-            <TextBlock Text="Min Value:" Grid.Row="9" Classes="primary align"/>
+            <TextBlock Text="Min Value:" Grid.Row="10" Classes="primary align"/>
             <NumericUpDown x:Name="minValueNumericUpDown" HorizontalAlignment="Stretch" 
                            IsEnabled="{Binding !#autoScaleCheckBox.IsChecked}"
-                           Grid.Row="9" Grid.Column="2" Value="{Binding UserSetting.MinValue}" InnerRightContent="V " Classes="primary"/>
+                           Grid.Row="10" Grid.Column="2" Value="{Binding UserSetting.MinValue}" InnerRightContent="V " Classes="primary"/>
             
 
-            <StackPanel                Grid.Row="10" Grid.Column="2" Orientation="Horizontal" Margin="0 5" HorizontalAlignment="Right">
+            <StackPanel                Grid.Row="11" Grid.Column="2" Orientation="Horizontal" Margin="0 5" HorizontalAlignment="Right">
                 <!--<Button x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary"/>-->
                 <SplitButton x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary">
                     <SplitButton.Flyout>
@@ -129,7 +136,7 @@
                 </SplitButton>
                 <Button x:Name="stopButton" Content="Stop" Width="100" HorizontalContentAlignment="Center" Command="{Binding StopCommand}" Classes="primary"/>
             </StackPanel>
-            <TextBlock Text="{Binding CumulativePoints, StringFormat=Cumulative:{0}}" Grid.Row="11" Grid.Column="2" HorizontalAlignment="Left" Classes="primary"/>
+            <TextBlock Text="{Binding CumulativePoints, StringFormat=Cumulative:{0}}" Grid.Row="12" Grid.Column="2" HorizontalAlignment="Left" Classes="primary"/>
             
         </Grid>
         
