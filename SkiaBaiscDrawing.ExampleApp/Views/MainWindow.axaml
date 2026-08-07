@@ -50,6 +50,7 @@
                                               MinValue="{Binding UserSetting.MinValue}"
                                               SampleRate="{Binding SampleRate}"
                                               PointCount="{Binding PointCount}"
+                                              CumulativePoints="{Binding CumulativePoints}"
                                               Items="{Binding Items}"
                                               />
 
@@ -58,7 +59,7 @@
         
 
         <Grid Grid.Row="0" Grid.Column="2" Grid.RowSpan="2"
-              ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto,*">
+              ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto,*">
             <Grid.Styles>
                 <Style Selector="TextBlock.align">
                     <Setter Property="Grid.Column" Value="0"/>
@@ -128,6 +129,7 @@
                 </SplitButton>
                 <Button x:Name="stopButton" Content="Stop" Width="100" HorizontalContentAlignment="Center" Command="{Binding StopCommand}" Classes="primary"/>
             </StackPanel>
+            <TextBlock Text="{Binding CumulativePoints, StringFormat=Cumulative:{0}}" Grid.Row="11" Grid.Column="2" HorizontalAlignment="Left" Classes="primary"/>
             
         </Grid>
         

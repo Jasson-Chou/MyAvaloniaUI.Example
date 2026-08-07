@@ -24,7 +24,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
     public class SkiaDrawWaveformScopeUsrCtrl : UserControl
     {
 
-        
+        public static readonly StyledProperty<ulong> CumulativePointsProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, ulong>(
+                nameof(CumulativePoints), 0UL);
 
         public static readonly StyledProperty<float> MinValueProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
@@ -98,7 +100,16 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
-            if(change.Property == XScaleProperty)
+
+            if (change.Property != SampleRateProperty && change.Property != LabelIntervalProperty && change.Property != TickSpacingProperty)
+                _skDrawWaveformLineVersion++;
+
+            if (change.Property != YOffsetProperty && change.Property != YScaleProperty)
+                _skDrawTimeAxisVersion++;
+
+            _skDrawGridVersion++;
+
+            if (change.Property == XScaleProperty)
             {
                 double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
                 float xStep = (float)(DrawGridWidth * XScale * scaling / (_cacheValues.Length - 1)); // 計算每個資料點的寬度
@@ -125,13 +136,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 }
                 RebuildItemsCache();
             }
-            if(change.Property != SampleRateProperty && change.Property != LabelIntervalProperty && change.Property != TickSpacingProperty)
-                _skDrawWaveformLineVersion++;
-
-            if(change.Property != YOffsetProperty && change.Property != YScaleProperty)
-                _skDrawTimeAxisVersion++;
-
-            _skDrawGridVersion++;
+            
 
         }
 
@@ -151,6 +156,12 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _ => Array.Empty<float>(),
             };
             _skDrawWaveformLineVersion++;
+        }
+
+        public ulong CumulativePoints
+        {
+            get => GetValue(CumulativePointsProperty);
+            set => SetValue(CumulativePointsProperty, value);
         }
 
         public float MinValue
@@ -248,6 +259,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         static SkiaDrawWaveformScopeUsrCtrl()
         {
             AffectsRender<SkiaDrawWaveformScopeUsrCtrl>(
+                CumulativePointsProperty,
                 MinValueProperty, MaxValueProperty, 
                 WaveformLineColorProperty, WaveformLineStrokeWidthProperty, 
                 XScaleProperty, YScaleProperty, XOffsetProperty, YOffsetProperty,
@@ -555,9 +567,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 int actualIndex = _skiaDrawWaveformLine.ActualIndexes[index];
                 DrawTextInfo valueText = null!;
-                if(double.IsNormal(SampleRate))
+                var startIndex = CumulativePoints - (ulong)_cacheValues.Length;
+                if (SampleRate != 0.0d && double.IsPositive(SampleRate) && double.IsNormal(SampleRate))
                 {
-                    var timeValue = actualIndex / SampleRate;
+                    var timeValue = (startIndex + (ulong)actualIndex) / SampleRate;
                     valueText = new DrawTextInfo($"{timeValue} S", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
                 }
                 else
@@ -765,7 +778,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _actualIndexes = actualIndexes;
                 _sKiaPen = skiaPen;
                 _bounds = bounds;
-                Bounds = new Rect(bounds.Left, bounds.Top, bounds.Width, bounds.Height);
+                Bounds = bounds.ToAvaloniaRect();
                 _version = version;
             }
 

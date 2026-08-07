@@ -10,12 +10,14 @@ namespace SkiaBasicDrawing.ExampleApp.Models
     public interface IWaveformRunService
     {
         int BufferSize { get; }
+        ulong CumulativePoints { get; }
         void SetBufferSize(int newSize);
         void ResetSimulator(IWaveformSimulator newSimulator);
         void Start();
         void Pull();
         void Stop();
         bool GetMinMax(out float min, out float max);
+        ulong GetCumulativePoints();
         float[] GetValues();
     }
 
@@ -36,6 +38,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
         private IWaveformSimulator _simulator;
 
         public int BufferSize => _queue.Capacity;
+        public ulong CumulativePoints { get; private set; } = 0;
 
         public void SetBufferSize(int newSize)
         {
@@ -50,6 +53,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
         public void Start()
         {
             _lastTime = TimeSpan.Zero;
+            CumulativePoints = 0;
             _stopwatch.Restart();
             _queue.Clear();
         }
@@ -63,6 +67,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
             var currentTime = _stopwatch.Elapsed;
             var duration = currentTime - _lastTime;
             var newSamples = _simulator.GenerateF(_lastTime, duration);
+            CumulativePoints += (ulong)newSamples.LongLength;
             _queue.EnqueueRange(newSamples);
             _lastTime = currentTime;
         }
@@ -77,6 +82,8 @@ namespace SkiaBasicDrawing.ExampleApp.Models
         {
             return _queue.GetMinMax(out min, out max);
         }
+
+        public ulong GetCumulativePoints() => CumulativePoints;
 
         public float[] GetValues()
         {

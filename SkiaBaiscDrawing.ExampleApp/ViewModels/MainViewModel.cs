@@ -91,7 +91,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
                 UserSetting.MaxValue = max;
             }
             var values = _waveformRunService.GetValues();
-
+            CumulativePoints = _waveformRunService.CumulativePoints;
             //// for avalonialist, we can use ReplaceAll to update the collection efficiently
             Items.Clear();
             Items.AddRange(values);
@@ -113,6 +113,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         private void GenerateWaveform()
         {
             PointCount = UserSetting.PointCount;
+            CumulativePoints = (ulong)UserSetting.PointCount;
             SampleRate = UserSetting.SampleRate;
             var waveformGen = _waveformGenFactory.Create(WaveformType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
             var buffer = waveformGen.GenerateF(PointCount);
@@ -146,6 +147,9 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 
         [ObservableProperty]
         private float _sampleRate = 1000.0f;
+
+        [ObservableProperty]
+        private ulong _cumulativePoints = 0;
 
         [ObservableProperty]
         private AvaloniaList<float> _items = new AvaloniaList<float>();
