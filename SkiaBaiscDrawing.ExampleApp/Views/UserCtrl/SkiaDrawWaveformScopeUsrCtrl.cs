@@ -450,25 +450,41 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 {
                     //int perTickSpacingCount = 50;// TickSpacing > _xStep ? (int)MathF.Ceiling((float)TickSpacing / _xStep) : 1;
                     //if(perTickSpacingCount == 0) perTickSpacingCount = 1;
-                    int firstTickXIndex = _skiaDrawWaveformLine.ActualIndexes.First();
-                    int lastTickXIndex = _skiaDrawWaveformLine.ActualIndexes.Last();
-                    int totalPointCount = lastTickXIndex - firstTickXIndex + 1;
-                    int totalTickCount = (int)(totalPointCount * TickSpacingScale);
-                    float perTickWidth = (float)totalPointCount / totalTickCount;
-                    float firstTickX = firstTickXIndex * _xStep - XOffset + DrawWaveformLineLeft;
-                    SKPoint[] tickPoints = new SKPoint[totalTickCount * 2];
+                    List<SKPoint> tickPointsList = new List<SKPoint>();
+                    float firstPointX = _skiaDrawWaveformLine.Points.First().X;
+                    float lastPointX = _skiaDrawWaveformLine.Points.Last().X;
+                    int firstPointIndex = _skiaDrawWaveformLine.ActualIndexes.First();
+                    int lastPointIndex = _skiaDrawWaveformLine.ActualIndexes.Last();
+                    var points = _skiaDrawWaveformLine.Points;
+                    int totalPointCount = _skiaDrawWaveformLine.Points.Length;
+                    float tickSpacingWidth = (float)(totalPointCount * _xStep) * (float)(1.0d - TickSpacingScale);
 
-                    for (int pidx = 1; pidx < totalTickCount; pidx++)
+                    float lastTickXOffset = firstPointIndex;
+                    for(int pidx = 0; pidx < totalPointCount; pidx++)
                     {
-                        int p1 = (pidx - 1) * 2;
-                        int p2 = (pidx - 1) * 2 + 1;
-                        float pXOffset = firstTickX + pidx * perTickWidth;
-                        tickPoints[p1] = new SKPoint(pXOffset, tickTop);
-                        tickPoints[p2] = new SKPoint(pXOffset, tickTop + tickSpacingLineHeight);
+                        var diff = points[pidx].X - lastTickXOffset;
+                        if (diff >= tickSpacingWidth)
+                        {
+                            lastTickXOffset = points[pidx].X;
+                            tickPointsList.Add(new SKPoint(lastTickXOffset, tickTop));
+                            tickPointsList.Add(new SKPoint(lastTickXOffset, tickTop + tickSpacingLineHeight));
+                        }
                     }
+
+                    
+                    //SKPoint[] tickPoints = new SKPoint[totalTickCount * 2];
+
+                    //for (int pidx = 0; pidx < totalTickCount; pidx++)
+                    //{
+                    //    int p1 = pidx * 2;
+                    //    int p2 = pidx * 2 + 1;
+                    //    float pXOffset = firstPointX + pidx * tickSpacingWidth;
+                    //    tickPoints[p1] = new SKPoint(pXOffset, tickTop);
+                    //    tickPoints[p2] = new SKPoint(pXOffset, tickTop + tickSpacingLineHeight);
+                    //}
                     _skiaDrawTimeAxis = new SkiaDrawTimeAxis(
                         new SKRect(DrawGridRectLeft, tickTop, DrawGridRectLeft + DrawGridWidth, (float)this.Bounds.Bottom),
-                        tickPoints, tickSpacingLineHeight, _skiaTimeAxisPen, _skDrawTimeAxisVersion);
+                        tickPointsList.ToArray(), tickSpacingLineHeight, _skiaTimeAxisPen, _skDrawTimeAxisVersion);
                 }
                 
             }
@@ -542,35 +558,21 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             if (_skiaDrawWaveformLine is null) return;
 
-            var gridRect = new Rect(DrawWaveformLineLeft, DrawWaveformLineTop, DrawGridWidth, DrawWaveformHeight);
+            var gridRect = new Rect(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformWidth, DrawWaveformHeight);
             var currPointerPosition = _pointerPosition;
+            
             if(false == gridRect.Contains(currPointerPosition))
                 return;
 
-            var pointerXOffset = (float)(currPointerPosition.X - gridRect.Left);
             var points = _skiaDrawWaveformLine.Points;
-            var xStep = points.Length > 1 ? MathF.Abs(points[1].X - points[0].X) : float.NaN;
-            if (float.IsNaN(xStep)) return;
-
-            int index = 0;
-            if(xStep != 0)
-            {
-                index = (int)Math.Round(pointerXOffset / xStep);
-                if(points.Length == 0 || index < 0 || index >= points.Length) return;
-            }
-
-            SKPoint targetPoint = SKPoint.Empty;
-            if(_isDownSampling)
-            {
-                index = FindNearestIndex(points, new SKPoint((float)currPointerPosition.X, (float)currPointerPosition.Y));
-            }
+            int index = FindNearestIndex(points, new SKPoint((float)currPointerPosition.X, (float)currPointerPosition.Y));
 
             if(index < 0)
             {
                 return;    
             }
 
-            targetPoint = points[index];
+            SKPoint targetPoint = points[index];
             var cursorPen = new Pen(Brushes.Red, 1.0) { DashStyle = DashStyle.Dash };
             float midDHTL = _drawCursorHighlightTextMarginLength * 0.5f;
             bool isPointInWaveformRect = true;
