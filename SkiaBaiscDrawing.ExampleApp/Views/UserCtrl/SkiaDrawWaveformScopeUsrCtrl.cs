@@ -290,6 +290,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private SkiaPen _skiaGridLinePen = null!;
         private SkiaPen _skiaTimeAxisPen = null!;
 
+        private SKFont _timeAxisTickFont = null!;
+        private SKPaint _timeAxisTextPaint = null!;
+
 
         private readonly float _drawWaveformMaxMinHeightMarginRate = 0.1f; // 10% margin
         private readonly float _drawWaveformMaxMinWidthMarginRate = 0.025f; // 2.5% margin
@@ -455,8 +458,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             {
                 float tickSpacingLineHeight = 5.0f;
                 float tickTop = DrawGridBottom - tickSpacingLineHeight * 0.5f;
+                float tickBottom = tickTop + tickSpacingLineHeight;
                 //if (double.IsNormal(SampleRate) && double.IsNormal(LabelInterval) && double.IsNormal(TickSpacing))
-                if(double.IsNormal(TickSpacingScale) && TickSpacingScale != 0.0d)
+                if (double.IsNormal(TickSpacingScale) && TickSpacingScale != 0.0d)
                 {
                     //int perTickSpacingCount = 50;// TickSpacing > _xStep ? (int)MathF.Ceiling((float)TickSpacing / _xStep) : 1;
                     //if(perTickSpacingCount == 0) perTickSpacingCount = 1;
@@ -469,7 +473,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     int totalPointCount = _skiaDrawWaveformLine.Points.Length;
                     float tickSpacingWidth = (float)(totalPointCount * _xStep) * (float)(1.0d - TickSpacingScale);
 
-                    float lastTickXOffset = firstPointIndex;
+                    float lastTickXOffset = firstPointX;
                     for(int pidx = 0; pidx < totalPointCount; pidx++)
                     {
                         var diff = points[pidx].X - lastTickXOffset;
@@ -477,7 +481,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                         {
                             lastTickXOffset = points[pidx].X;
                             tickPointsList.Add(new SKPoint(lastTickXOffset, tickTop));
-                            tickPointsList.Add(new SKPoint(lastTickXOffset, tickTop + tickSpacingLineHeight));
+                            tickPointsList.Add(new SKPoint(lastTickXOffset, tickBottom));
                         }
                     }
 
