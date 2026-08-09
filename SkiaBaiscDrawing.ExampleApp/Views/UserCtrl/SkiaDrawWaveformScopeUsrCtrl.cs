@@ -368,10 +368,22 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             InvalidateVisual();
         }
 
+        protected override void OnPointerPressed(PointerPressedEventArgs e)
+        {
+            base.OnPointerPressed(e);
+            if(e.ClickCount == 2)
+            {
+                Debug.WriteLine("Pointer Double Clicked");
+            }
+
+            InvalidateVisual();
+        }
+
         protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
         {
             base.OnPointerCaptureLost(e);
-            _showCursor = false;
+            Debug.WriteLine("Pointer Capture Lost");
+
             InvalidateVisual();
         }
 
@@ -398,8 +410,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             if (_cacheValues.Length < 2)
                 return;
-
-            double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
             
             if (PointCount > 0 && _cacheValues.Length > PointCount)
             {
@@ -417,7 +427,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 var (points, actualIndexes) = BuildScopeWaveformPoints(_cacheValues, PointCount,
                 _drawScopeWaveformLineRect,
-                MaxValue, MinValue, scaling, out _xStep, out _isDownSampling, XOffset, YOffset, XScale, YScale);
+                MaxValue, MinValue, out _xStep, out _isDownSampling, XOffset, YOffset, XScale, YScale);
                 _skiaDrawWaveformLine = new SkiaDrawWaveformLine(points, 
                     actualIndexes, _skiaWaveformLinePen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
 
@@ -471,17 +481,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                         }
                     }
 
-                    
-                    //SKPoint[] tickPoints = new SKPoint[totalTickCount * 2];
-
-                    //for (int pidx = 0; pidx < totalTickCount; pidx++)
-                    //{
-                    //    int p1 = pidx * 2;
-                    //    int p2 = pidx * 2 + 1;
-                    //    float pXOffset = firstPointX + pidx * tickSpacingWidth;
-                    //    tickPoints[p1] = new SKPoint(pXOffset, tickTop);
-                    //    tickPoints[p2] = new SKPoint(pXOffset, tickTop + tickSpacingLineHeight);
-                    //}
                     _skiaDrawTimeAxis = new SkiaDrawTimeAxis(
                         new SKRect(DrawGridRectLeft, tickTop, DrawGridRectLeft + DrawGridWidth, (float)this.Bounds.Bottom),
                         tickPointsList.ToArray(), tickSpacingLineHeight, _skiaTimeAxisPen, _skDrawTimeAxisVersion);
@@ -676,7 +675,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         }
 
         private static (SKPoint[] skPoints, int[] actualIndexes) BuildScopeWaveformPoints(ReadOnlySpan<float> values, int pointCount, SKRect rect,
-            float maxValue, float minValue, double renderScaling, out float xStep, out bool isDownSampling, float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
+            float maxValue, float minValue, out float xStep, out bool isDownSampling, float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
         {
             int n = values.Length;
             isDownSampling = false;
@@ -691,7 +690,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             float width = rect.Width;
             float higth = rect.Height;
 
-            int canShowColumns = (int)Math.Ceiling(width * renderScaling);
+            int canShowColumns = (int)Math.Ceiling(width);
 
             float yRange = maxValue - minValue;
             float yScaleFactor = (yRange != 0) ? (higth * yScale / yRange) : 1.0f; // 計算 Y 軸縮放因子
@@ -701,15 +700,15 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             if (pointCount > 0)
             {
-                xStep = (float)(width * xScale * renderScaling / (pointCount - 1)); // 計算寬度，當固定點數時，使用 pointCount 來計算 xStep
+                xStep = (float)(width * xScale / (pointCount - 1)); // 計算寬度，當固定點數時，使用 pointCount 來計算 xStep
             }
             else
             {
-                xStep = (float)(width * xScale * renderScaling / (n - 1)); // 計算寬度，適合動態點數，使用 n 來計算 xStep
+                xStep = (float)(width * xScale / (n - 1)); // 計算寬度，適合動態點數，使用 n 來計算 xStep
             }
 
             int startIndex = xOffset > 0 ? (int)(xOffset / xStep) : 0;
-            int endIndex = Math.Min(n - 1, startIndex + (int)Math.Ceiling(width * renderScaling / xStep));
+            int endIndex = Math.Min(n - 1, startIndex + (int)Math.Ceiling(width / xStep));
             int destCount = endIndex - startIndex + 1;
 
 
