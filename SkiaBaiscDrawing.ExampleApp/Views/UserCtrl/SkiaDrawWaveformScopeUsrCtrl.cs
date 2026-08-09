@@ -286,12 +286,12 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             DrawStatisticWidth = 100;
         }
         private float[] _cacheValues = Array.Empty<float>();
-        private SkiaPen _skiaWaveformLinePen = null!;
-        private SkiaPen _skiaGridLinePen = null!;
-        private SkiaPen _skiaTimeAxisPen = null!;
+        private SkiaPaint _skiaWaveformLinePen = null!;
+        private SkiaPaint _skiaGridLinePen = null!;
+        private SkiaPaint _skiaTimeAxisPaint = null!;
 
-        private SKFont _timeAxisTickFont = null!;
-        private SKPaint _timeAxisTextPaint = null!;
+        private SkiaFont _timeAxisTickFont = null!;
+        private SkiaPaint _timeAxisTextPaint = null!;
 
 
         private readonly float _drawWaveformMaxMinHeightMarginRate = 0.1f; // 10% margin
@@ -453,41 +453,73 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if (_skiaDrawWaveformLine is null) return;
             if (float.IsNaN(_xStep)) return;
 
-            _skiaTimeAxisPen = _skiaTimeAxisPen.CompareOrGet(Colors.Red, 1.0f);
+            _skiaTimeAxisPaint = _skiaTimeAxisPaint.CompareOrGet(Colors.Red, 1.0f);
+            _timeAxisTickFont = _timeAxisTickFont.CompareOrGet(SKTypeface.Default, 12, scaleX:1.0f);
+            _timeAxisTextPaint = _timeAxisTextPaint.CompareOrGet(Colors.Red, 1.0f, SKPaintStyle.Fill);
+
+
             if (_skiaDrawTimeAxis is null || _skiaDrawTimeAxis.Version != _skDrawTimeAxisVersion)
             {
                 float tickSpacingLineHeight = 5.0f;
                 float tickTop = DrawGridBottom - tickSpacingLineHeight * 0.5f;
                 float tickBottom = tickTop + tickSpacingLineHeight;
+
+                float tickTextTop = tickBottom + 20.0f;
+                float tickTextMargin = 5.0f;
                 //if (double.IsNormal(SampleRate) && double.IsNormal(LabelInterval) && double.IsNormal(TickSpacing))
                 if (double.IsNormal(TickSpacingScale) && TickSpacingScale != 0.0d)
                 {
                     //int perTickSpacingCount = 50;// TickSpacing > _xStep ? (int)MathF.Ceiling((float)TickSpacing / _xStep) : 1;
                     //if(perTickSpacingCount == 0) perTickSpacingCount = 1;
+                    List<TimeTextTick> timeTextTicks = new List<TimeTextTick>();
                     List<SKPoint> tickPointsList = new List<SKPoint>();
                     float firstPointX = _skiaDrawWaveformLine.Points.First().X;
                     float lastPointX = _skiaDrawWaveformLine.Points.Last().X;
                     int firstPointIndex = _skiaDrawWaveformLine.ActualIndexes.First();
                     int lastPointIndex = _skiaDrawWaveformLine.ActualIndexes.Last();
                     var points = _skiaDrawWaveformLine.Points;
+                    var actualIndexes = _skiaDrawWaveformLine.ActualIndexes;
                     int totalPointCount = _skiaDrawWaveformLine.Points.Length;
                     float tickSpacingWidth = (float)(totalPointCount * _xStep) * (float)(1.0d - TickSpacingScale);
 
+                    var startIndex = CumulativePoints - (ulong)_cacheValues.Length;
                     float lastTickXOffset = firstPointX;
-                    for(int pidx = 0; pidx < totalPointCount; pidx++)
+
+
+                    var lastTimeValue = (startIndex + (ulong)firstPointIndex) / SampleRate;
+                    float lastTickTextWidth = _timeAxisTickFont.MeasureTextWidth($"{lastTimeValue} S", out SKRect _, _skiaTimeAxisPaint.SKiaPaint);
+                    float midLastTickTextWidth = lastTickTextWidth * 0.5f;
+                    float lastTickTextXOffset = firstPointX - midLastTickTextWidth;
+                    timeTextTicks.Add(new TimeTextTick { point = new SKPoint(lastTickTextXOffset, tickTextTop), Text = $"{lastTimeValue} S" });
+                    lastTickTextXOffset += lastTickTextWidth + tickTextMargin;
+
+                    for (int pidx = 0; pidx < totalPointCount; pidx++)
                     {
-                        var diff = points[pidx].X - lastTickXOffset;
-                        if (diff >= tickSpacingWidth)
+                        var tickDiff = points[pidx].X - lastTickXOffset;
+                        if (tickDiff >= tickSpacingWidth)
                         {
                             lastTickXOffset = points[pidx].X;
                             tickPointsList.Add(new SKPoint(lastTickXOffset, tickTop));
                             tickPointsList.Add(new SKPoint(lastTickXOffset, tickBottom));
+                            
+                            var currTickText = $"{(startIndex + (ulong)actualIndexes[pidx]) / SampleRate} S";
+                            var currTickTextWidth = _timeAxisTickFont.MeasureTextWidth(currTickText, out SKRect _, _skiaTimeAxisPaint.SKiaPaint);
+                            var currMidTickTextWidth = currTickTextWidth * 0.5f;
+                            var tickTextDiff = points[pidx].X - currMidTickTextWidth - lastTickTextXOffset;
+
+                            if(tickTextDiff > 0)
+                            {
+                                timeTextTicks.Add(new TimeTextTick { point = new SKPoint(points[pidx].X - currMidTickTextWidth, tickTextTop), Text = currTickText });
+                                lastTickTextXOffset = points[pidx].X + currMidTickTextWidth + tickTextMargin;
+                            }
                         }
                     }
 
                     _skiaDrawTimeAxis = new SkiaDrawTimeAxis(
                         new SKRect(DrawGridRectLeft, tickTop, DrawGridRectLeft + DrawGridWidth, (float)this.Bounds.Bottom),
-                        tickPointsList.ToArray(), tickSpacingLineHeight, _skiaTimeAxisPen, _skDrawTimeAxisVersion);
+                        tickPointsList.ToArray(), _skiaTimeAxisPaint, 
+                        _timeAxisTextPaint, _timeAxisTickFont, SKTextAlign.Left, timeTextTicks.ToArray(),
+                        _skDrawTimeAxisVersion);
                 }
                 
             }
@@ -791,7 +823,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         
         private class SkiaDrawWaveformLine : ICustomDrawOperation
         {
-            public SkiaDrawWaveformLine(SKPoint[] points, int[] actualIndexes, SkiaPen skiaPen, SKRect bounds, int version)
+            public SkiaDrawWaveformLine(SKPoint[] points, int[] actualIndexes, SkiaPaint skiaPen, SKRect bounds, int version)
             {
                 _points = points;
                 _actualIndexes = actualIndexes;
@@ -804,7 +836,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             private readonly SKPoint[] _points;
             private readonly int[] _actualIndexes;
             private readonly int _version;
-            private readonly SkiaPen? _sKiaPen;
+            private readonly SkiaPaint? _sKiaPen;
             private readonly SKRect _bounds;
             
             public SKPoint[] Points => _points;
@@ -849,14 +881,20 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             }
         }
 
+        private readonly record struct TimeTextTick(SKPoint point, string Text);
         private class SkiaDrawTimeAxis : ICustomDrawOperation
         {
-            public SkiaDrawTimeAxis(SKRect bounds, SKPoint[] tickTopPoints, float tickSpacingLineHeight, SkiaPen skiaPen, int version)
+            public SkiaDrawTimeAxis(SKRect bounds, SKPoint[] tickTopPoints, SkiaPaint skiaLinePaint,
+                SkiaPaint skiaTextPaint, SkiaFont skiaTextFont, SKTextAlign textAlign, TimeTextTick[] timeTextTicks, int version)
             {
                 _bounds = bounds;
                 Bounds = bounds.ToAvaloniaRect();
                 _tickPoints = tickTopPoints;
-                _sKiaPen = skiaPen;
+                _sKiaLinePaint = skiaLinePaint;
+                _sKiaTextPaint = skiaTextPaint;
+                _sKiaTextFont = skiaTextFont;
+                _textAlign = textAlign;
+                _timeTextTicks = timeTextTicks;
                 _version = version;
             }
 
@@ -865,7 +903,11 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             public int Version => _version;
             private readonly SKRect _bounds;
             private readonly SKPoint[] _tickPoints;
-            private readonly SkiaPen _sKiaPen;
+            private readonly SkiaPaint _sKiaLinePaint;
+            private readonly SkiaPaint _sKiaTextPaint;
+            private readonly SkiaFont _sKiaTextFont;
+            private readonly SKTextAlign _textAlign;
+            private readonly TimeTextTick[] _timeTextTicks;
             private readonly int _version;
 
             private bool _isDisposed = false;
@@ -895,10 +937,18 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 canvas.Save();
                 canvas.ClipRect(_bounds);
 
-                if (_sKiaPen is not null)
+                if (_sKiaLinePaint is not null)
                 {
-                    canvas.DrawPoints(SKPointMode.Lines, _tickPoints, _sKiaPen.SKiaPaint);
+                    canvas.DrawPoints(SKPointMode.Lines, _tickPoints, _sKiaLinePaint.SKiaPaint);
                 }
+                if (_sKiaTextPaint is not null && _sKiaTextFont is not null)
+                {
+                    foreach (var timeTextTick in _timeTextTicks)
+                    {
+                        canvas.DrawText(timeTextTick.Text, timeTextTick.point, _textAlign, _sKiaTextFont.SKiaFont, _sKiaTextPaint.SKiaPaint);
+                    }
+                }
+
                 canvas.Restore();
             }
         }
@@ -909,7 +959,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             public SkiaDrawGrid(SKRect drawRect, SKRect drawGridRect, SKRect drawWaveformRect,
                 float maxValueTop, float minValueTop, float scaleLineLength,
-                SkiaPen skiaPen, int version)
+                SkiaPaint skiaPen, int version)
             {
                 _version = version;
                 _sKiaPen = skiaPen;
@@ -923,7 +973,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             }
 
             private readonly int _version;
-            private readonly SkiaPen? _sKiaPen;
+            private readonly SkiaPaint? _sKiaPen;
             private readonly SKRect _bounds;
             private readonly SKRect _drawGridRect;
             private readonly SKRect _drawWaveformRect;
@@ -1030,20 +1080,22 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
     }
 
-    internal class SkiaPen : IDisposable
+    internal class SkiaPaint : IDisposable
     {
         bool isDisposed = false;
         internal readonly Color _color;
         internal readonly float _strokeWidth;
+        internal readonly SKPaintStyle _sKPaintStyle;
         private readonly SKPaint _sKPaint;
-        public SkiaPen(Color color, float strokeWidth)
+        public SkiaPaint(Color color, float strokeWidth, SKPaintStyle sKPaintStyle = SKPaintStyle.Stroke)
         {
             _color = color;
             _strokeWidth = strokeWidth;
+            _sKPaintStyle = sKPaintStyle;
             _sKPaint = new SKPaint
             {
                 Color = _color.ToSKColor(),
-                Style = SKPaintStyle.Stroke,
+                Style = _sKPaintStyle,
                 StrokeWidth = _strokeWidth,
                 IsAntialias = true,
                 StrokeJoin = SKStrokeJoin.Round,
@@ -1053,9 +1105,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
         public SKPaint SKiaPaint => _sKPaint;
 
-        public bool Equals(Color color, float strokeWidth)
+        public bool Equals(Color color, float strokeWidth, SKPaintStyle sKPaintStyle = SKPaintStyle.Stroke)
         {
-            return _color.Equals(color) && _strokeWidth.Equals(strokeWidth);
+            return _color.Equals(color) && _strokeWidth.Equals(strokeWidth) && _sKPaintStyle == sKPaintStyle;
         }
 
         public void Dispose()
@@ -1068,21 +1120,65 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         }
     }
 
-    internal static class SkiaPenExtensions
+    internal class SkiaFont : IDisposable
     {
-        public static SkiaPen CompareOrGet(this SkiaPen? skiaPen, Color color, float strokeWidth)
+        bool isDisposed = false;
+        internal readonly SKTypeface _typeface;
+        internal readonly float _fontSize;
+        internal readonly float _scaleX;
+        internal readonly float _skewX;
+        private readonly SKFont _sKFont;
+        public SkiaFont(SKTypeface typeface, float fontSize, float scaleX = 12, float skewX = 0)
         {
-            if (skiaPen is null || !skiaPen.Equals(color, strokeWidth))
+            _typeface = typeface;
+            _fontSize = fontSize;
+            _scaleX = scaleX;
+            _skewX = skewX;
+            _sKFont = new SKFont(_typeface, _fontSize, _scaleX, _skewX);
+        }
+        public SKFont SKiaFont => _sKFont;
+        public bool Equals(SKTypeface typeface, float fontSize, float scaleX = 12, float skewX = 0)
+        {
+            return _typeface.Equals(typeface) && _fontSize.Equals(fontSize) && _scaleX.Equals(scaleX) && _skewX.Equals(skewX);
+        }
+        public void Dispose()
+        {
+            if (!isDisposed)
             {
-                skiaPen?.Dispose();
-                return new SkiaPen(color, strokeWidth);
+                isDisposed = true;
+                _sKFont.Dispose();
+                _typeface.Dispose();
             }
-            return skiaPen;
         }
     }
 
-    internal static class DrawTextInfoExtensions
+    internal static class SkiaObjectExtensions
     {
+        public static SkiaPaint CompareOrGet(this SkiaPaint? skiaPen, Color color, float strokeWidth, SKPaintStyle sKPaintStyle = SKPaintStyle.Stroke)
+        {
+            if (skiaPen is null || !skiaPen.Equals(color, strokeWidth, sKPaintStyle))
+            {
+                skiaPen?.Dispose();
+                return new SkiaPaint(color, strokeWidth, sKPaintStyle);
+            }
+            return skiaPen;
+        }
+
+        public static float MeasureTextWidth(this SkiaFont skiaFont, string text, out SKRect bounds, SKPaint sKPaint = null!)
+        {
+            return skiaFont.SKiaFont.MeasureText(text, out bounds, sKPaint);
+        }
+
+        public static SkiaFont CompareOrGet(this SkiaFont? skiaFont, SKTypeface typeface, float fontSize, float scaleX = 12, float skewX = 0)
+        {
+            if (skiaFont is null || !skiaFont.Equals(typeface, fontSize, scaleX, skewX))
+            {
+                skiaFont?.Dispose();
+                return new SkiaFont(typeface, fontSize, scaleX, skewX);
+            }
+            return skiaFont;
+        }
+
         public static DrawTextInfo CompareOrGet(this DrawTextInfo? drawTextInfo, string text, CultureInfo cultureInfo, FlowDirection flowDirection, Typeface typeface, double fontSize, IBrush brush)
         {
             if (drawTextInfo is null || !drawTextInfo.Equals(text, cultureInfo, flowDirection, typeface, fontSize, brush))
