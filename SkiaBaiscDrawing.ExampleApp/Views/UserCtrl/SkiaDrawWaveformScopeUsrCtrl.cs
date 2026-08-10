@@ -104,16 +104,16 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if (change.Property != SampleRateProperty && change.Property != LabelIntervalProperty && change.Property != TickSpacingScaleProperty)
                 _skDrawWaveformLineVersion++;
 
-            if (change.Property != YOffsetProperty && change.Property != YScaleProperty)
+            if (change.Property == XOffsetProperty || change.Property == XScaleProperty || change.Property == TickSpacingScaleProperty)
                 _skDrawTimeAxisVersion++;
 
-            _skDrawGridVersion++;
+            if (change.Property == YScaleProperty || change.Property == YOffsetProperty || change.Property == MaxValueProperty || change.Property == MinValueProperty)
+                _skDrawGridVersion++;
 
             if (change.Property == XScaleProperty)
             {
-                double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
                 int n = PointCount > 0 ? PointCount : _cacheValues.Length;
-                float xStep = (float)(DrawWaveformWidth * XScale * scaling / (n - 1)); // 計算每個資料點的寬度
+                float xStep = (float)(DrawWaveformWidth * XScale / (n - 1)); // 計算每個資料點的寬度
                 MaxXOffset = Math.Max(0.0f, (n - 1) * xStep - (float)DrawWaveformWidth); // 計算新的最大 XOffset
                 CoerceValue(XOffsetProperty); // 重新計算 XOffset 的值，確保它在新的範圍內 [呼叫'coerce']
             }
@@ -165,6 +165,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _ => Array.Empty<float>(),
             };
             _skDrawWaveformLineVersion++;
+            _skDrawTimeAxisVersion++;
         }
 
         public ulong CumulativePoints
@@ -486,12 +487,12 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     float lastTickXOffset = firstPointX;
 
 
-                    var lastTimeValue = (startIndex + (ulong)firstPointIndex) / SampleRate;
-                    float lastTickTextWidth = _timeAxisTickFont.MeasureTextWidth($"{lastTimeValue} S", out SKRect _, _skiaTimeAxisPaint.SKiaPaint);
-                    float midLastTickTextWidth = lastTickTextWidth * 0.5f;
-                    float lastTickTextXOffset = firstPointX - midLastTickTextWidth;
-                    timeTextTicks.Add(new TimeTextTick { point = new SKPoint(lastTickTextXOffset, tickTextTop), Text = $"{lastTimeValue} S" });
-                    lastTickTextXOffset += lastTickTextWidth + tickTextMargin;
+                    var currTimeValue = (startIndex + (ulong)firstPointIndex) / SampleRate;
+                    var currTimeTickText = $"{currTimeValue} S";
+                    float currTickTextWidth = _timeAxisTickFont.MeasureTextWidth(currTimeTickText, out SKRect _, _skiaTimeAxisPaint.SKiaPaint);
+                    float midLastTickTextWidth = currTickTextWidth * 0.5f;
+                    // Ignore the first tick text, as it may overlap with the waveform line
+                    float lastTickTextXOffset = firstPointX - midLastTickTextWidth + currTickTextWidth + tickTextMargin;
 
                     for (int pidx = 0; pidx < totalPointCount; pidx++)
                     {
@@ -501,15 +502,16 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                             lastTickXOffset = points[pidx].X;
                             tickPointsList.Add(new SKPoint(lastTickXOffset, tickTop));
                             tickPointsList.Add(new SKPoint(lastTickXOffset, tickBottom));
-                            
-                            var currTickText = $"{(startIndex + (ulong)actualIndexes[pidx]) / SampleRate} S";
-                            var currTickTextWidth = _timeAxisTickFont.MeasureTextWidth(currTickText, out SKRect _, _skiaTimeAxisPaint.SKiaPaint);
+
+                            currTimeValue = (startIndex + (ulong)actualIndexes[pidx]) / SampleRate;
+                            currTimeTickText = $"{currTimeValue} S";
+                            currTickTextWidth = _timeAxisTickFont.MeasureTextWidth(currTimeTickText, out SKRect _, _skiaTimeAxisPaint.SKiaPaint);
                             var currMidTickTextWidth = currTickTextWidth * 0.5f;
                             var tickTextDiff = points[pidx].X - currMidTickTextWidth - lastTickTextXOffset;
 
                             if(tickTextDiff > 0)
                             {
-                                timeTextTicks.Add(new TimeTextTick { point = new SKPoint(points[pidx].X - currMidTickTextWidth, tickTextTop), Text = currTickText });
+                                timeTextTicks.Add(new TimeTextTick { point = new SKPoint(points[pidx].X - currMidTickTextWidth, tickTextTop), Text = currTimeTickText });
                                 lastTickTextXOffset = points[pidx].X + currMidTickTextWidth + tickTextMargin;
                             }
                         }
@@ -531,7 +533,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         {
             var boundWith = (float)this.Bounds.Width;
             var boundHeight = (float)this.Bounds.Height;
-            double scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
 
             var defaultHeight = DefaultDrawGridMinValueTop - DefaultDrawGridMaxValueTop;
             var actualHeight = defaultHeight * YScale;
