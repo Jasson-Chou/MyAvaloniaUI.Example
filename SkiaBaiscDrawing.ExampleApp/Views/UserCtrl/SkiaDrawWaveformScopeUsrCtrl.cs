@@ -40,6 +40,30 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, Color>(
                 nameof(WaveformLineColor), Colors.DeepSkyBlue);
 
+        public static readonly StyledProperty<IBrush?> MaxMinTextForegroundProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IBrush?>(
+                nameof(MaxMinTextForeground), Brushes.White);
+
+        public static readonly StyledProperty<Color> GridLineColorProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, Color>(
+                nameof(GridLineColor), Colors.White);
+
+        public static readonly StyledProperty<Color> TimeAxisLineColorProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, Color>(
+                nameof(TimeAxisLineColor), Colors.Red);
+
+        public static readonly StyledProperty<Color> TimeAxisTextColorProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, Color>(
+                nameof(TimeAxisTextColor), Colors.Red);
+
+        public static readonly StyledProperty<IBrush?> CursorValueTextForegroundProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IBrush?>(
+                nameof(CursorValueTextForeground), Brushes.Red);
+
+        public static readonly StyledProperty<IBrush?> CursorValueTextBackgroundProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IBrush?>(
+                nameof(CursorValueTextBackground), Brushes.Orange);
+
         public static readonly StyledProperty<float> WaveformLineStrokeWidthProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
                 nameof(WaveformLineStrokeWidth), 1.0f);
@@ -107,7 +131,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if (change.Property == XOffsetProperty || change.Property == XScaleProperty || change.Property == TickSpacingScaleProperty)
                 _skDrawTimeAxisVersion++;
 
-            if (change.Property == YScaleProperty || change.Property == YOffsetProperty || change.Property == MaxValueProperty || change.Property == MinValueProperty)
+            if (change.Property == YScaleProperty || change.Property == YOffsetProperty || change.Property == MaxValueProperty || 
+                change.Property == MinValueProperty || change.Property == MaxMinTextForegroundProperty || change.Property == GridLineColorProperty)
                 _skDrawGridVersion++;
 
             if (change.Property == XScaleProperty)
@@ -192,6 +217,42 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             set => SetValue(WaveformLineColorProperty, value);
         }
 
+        public IBrush? MaxMinTextForeground
+        {
+            get => GetValue(MaxMinTextForegroundProperty);
+            set => SetValue(MaxMinTextForegroundProperty, value);
+        }
+
+        public Color GridLineColor
+        {
+            get => GetValue(GridLineColorProperty);
+            set => SetValue(GridLineColorProperty, value);
+        }
+
+        public Color TimeAxisLineColor
+        {
+            get => GetValue(TimeAxisLineColorProperty);
+            set => SetValue(TimeAxisLineColorProperty, value);
+        }
+
+        public Color TimeAxisTextColor
+        {
+            get => GetValue(TimeAxisTextColorProperty);
+            set => SetValue(TimeAxisTextColorProperty, value);
+        }
+
+        public IBrush? CursorValueTextForeground
+        {
+            get => GetValue(CursorValueTextForegroundProperty);
+            set => SetValue(CursorValueTextForegroundProperty, value);
+        }
+
+        public IBrush? CursorValueTextBackground
+        {
+            get => GetValue(CursorValueTextBackgroundProperty);
+            set => SetValue(CursorValueTextBackgroundProperty, value);
+        }
+
         public float WaveformLineStrokeWidth
         {
             get => GetValue(WaveformLineStrokeWidthProperty);
@@ -274,7 +335,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 WaveformLineColorProperty, WaveformLineStrokeWidthProperty, 
                 XScaleProperty, YScaleProperty, XOffsetProperty, YOffsetProperty,
                 PointCountProperty, 
-                SampleRateProperty, LabelIntervalProperty, TickSpacingScaleProperty, 
+                SampleRateProperty, LabelIntervalProperty, TickSpacingScaleProperty, MaxMinTextForegroundProperty,
+                TimeAxisLineColorProperty, GridLineColorProperty, TimeAxisTextColorProperty,
                 ItemsProperty);
         }
 
@@ -288,8 +350,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         }
         private float[] _cacheValues = Array.Empty<float>();
         private SkiaPaint _skiaWaveformLinePen = null!;
-        private SkiaPaint _skiaGridLinePen = null!;
-        private SkiaPaint _skiaTimeAxisPaint = null!;
+        private SkiaPaint _skiaGridLinePaint = null!;
+        private SkiaPaint _skiaTimeAxisLinePaint = null!;
 
         private SkiaFont _timeAxisTickFont = null!;
         private SkiaPaint _timeAxisTextPaint = null!;
@@ -391,18 +453,27 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             InvalidateVisual();
         }
 
+        private Stopwatch recordSpendTime = new Stopwatch();
         public override void Render(DrawingContext context)
         {
-
+            recordSpendTime.Restart();
             DrawWaveform(context);
-
+            var drawWaveformTime = recordSpendTime.Elapsed.TotalMilliseconds;
+            recordSpendTime.Restart();
             DrawGrid(context);
-
+            var drawGridTime = recordSpendTime.Elapsed.TotalMilliseconds;
+            recordSpendTime.Restart();
             DrawTimeAxis(context);
-
+            var drawTimeAxisTime = recordSpendTime.Elapsed.TotalMilliseconds;
+            recordSpendTime.Restart();
             DrawCursor(context);
-
+            var drawCursorTime = recordSpendTime.Elapsed.TotalMilliseconds;
+            recordSpendTime.Restart();
             DrawFpsInfo(context);
+            var drawFpsInfoTime = recordSpendTime.Elapsed.TotalMilliseconds;
+            recordSpendTime.Stop();
+            var totalDrawTime = drawWaveformTime + drawGridTime + drawTimeAxisTime + drawCursorTime + drawFpsInfoTime;
+            Debug.WriteLine($"Draw Times - Waveform: {drawWaveformTime} ms, Grid: {drawGridTime} ms, TimeAxis: {drawTimeAxisTime} ms, Cursor: {drawCursorTime} ms, FpsInfo: {drawFpsInfoTime} ms, Total: {totalDrawTime} ms");
         }
 
         private void DrawWaveform(DrawingContext context)
@@ -454,10 +525,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if (_skiaDrawWaveformLine is null) return;
             if (float.IsNaN(_xStep)) return;
 
-            _skiaTimeAxisPaint = _skiaTimeAxisPaint.CompareOrGet(Colors.Red, 1.0f);
+            _skiaTimeAxisLinePaint = _skiaTimeAxisLinePaint.CompareOrGet(TimeAxisLineColor, 1.0f);
             _timeAxisTickFont = _timeAxisTickFont.CompareOrGet(SKTypeface.Default, 12, scaleX:1.0f);
-            _timeAxisTextPaint = _timeAxisTextPaint.CompareOrGet(Colors.Red, 1.0f, SKPaintStyle.Fill);
-
+            _timeAxisTextPaint = _timeAxisTextPaint.CompareOrGet(TimeAxisTextColor, 1.0f, SKPaintStyle.Fill);
 
             if (_skiaDrawTimeAxis is null || _skiaDrawTimeAxis.Version != _skDrawTimeAxisVersion)
             {
@@ -489,7 +559,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                     var currTimeValue = (startIndex + (ulong)firstPointIndex) / SampleRate;
                     var currTimeTickText = $"{currTimeValue} S";
-                    float currTickTextWidth = _timeAxisTickFont.MeasureTextWidth(currTimeTickText, out SKRect _, _skiaTimeAxisPaint.SKiaPaint);
+                    float currTickTextWidth = _timeAxisTickFont.MeasureTextWidth(currTimeTickText, out SKRect _, _timeAxisTextPaint.SKiaPaint);
                     float midLastTickTextWidth = currTickTextWidth * 0.5f;
                     // Ignore the first tick text, as it may overlap with the waveform line
                     float lastTickTextXOffset = firstPointX - midLastTickTextWidth + currTickTextWidth + tickTextMargin;
@@ -505,7 +575,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                             currTimeValue = (startIndex + (ulong)actualIndexes[pidx]) / SampleRate;
                             currTimeTickText = $"{currTimeValue} S";
-                            currTickTextWidth = _timeAxisTickFont.MeasureTextWidth(currTimeTickText, out SKRect _, _skiaTimeAxisPaint.SKiaPaint);
+                            currTickTextWidth = _timeAxisTickFont.MeasureTextWidth(currTimeTickText, out SKRect _, _timeAxisTextPaint.SKiaPaint);
                             var currMidTickTextWidth = currTickTextWidth * 0.5f;
                             var tickTextDiff = points[pidx].X - currMidTickTextWidth - lastTickTextXOffset;
 
@@ -519,7 +589,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                     _skiaDrawTimeAxis = new SkiaDrawTimeAxis(
                         new SKRect(DrawGridRectLeft, tickTop, DrawGridRectLeft + DrawGridWidth, (float)this.Bounds.Bottom),
-                        tickPointsList.ToArray(), _skiaTimeAxisPaint, 
+                        tickPointsList.ToArray(), _skiaTimeAxisLinePaint, 
                         _timeAxisTextPaint, _timeAxisTickFont, SKTextAlign.Left, timeTextTicks.ToArray(),
                         _skDrawTimeAxisVersion);
                 }
@@ -541,7 +611,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             var drawGridMaxMinValueScaleLineLeft = DrawGridRectLeft - DrawGridMaxMinValueScaleLineLength * 0.5f;
 
-            _skiaGridLinePen = _skiaGridLinePen.CompareOrGet(Colors.Gray, 1.0f);
+            _skiaGridLinePaint = _skiaGridLinePaint.CompareOrGet(GridLineColor, 1.0f);
 
             if (_skiaDrawGrid is null || _skiaDrawGrid.Version != _skDrawGridVersion)
             {
@@ -563,19 +633,24 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     _drawScopeWaveformLineRect.Size = new SKSize(DrawWaveformWidth, DrawWaveformHeight);
                 }
 
+                IBrush? maxMinTextForeground = MaxMinTextForeground;
+                if (maxMinTextForeground is null)
+                {
+                    maxMinTextForeground = Brushes.White;
+                }
 
                 string maxValueText = $"{MaxValue} V";
                 string minValueText = $"{MinValue} V";
 
-                _maxValueDrawText = _maxValueDrawText.CompareOrGet(maxValueText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.White);
+                _maxValueDrawText = _maxValueDrawText.CompareOrGet(maxValueText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, maxMinTextForeground);
                 _maxValueDrawText.Position = new Point(drawGridMaxMinValueScaleLineLeft - _maxValueDrawText.Width - _drawMaxMinValueTextMargin, actualMaxValueTop - _maxValueDrawText.MidHeight);
 
-                _minValueDrawText = _minValueDrawText.CompareOrGet(minValueText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.White);
+                _minValueDrawText = _minValueDrawText.CompareOrGet(minValueText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, maxMinTextForeground);
                 _minValueDrawText.Position = new Point(drawGridMaxMinValueScaleLineLeft - _minValueDrawText.Width - _drawMaxMinValueTextMargin, actualMinValueTop - _minValueDrawText.MidHeight);
 
                 _skiaDrawGrid = new SkiaDrawGrid(_drawRect, _drawScopeGridRect, _drawScopeWaveformLineRect,
                     actualMaxValueTop, actualMinValueTop, DrawGridMaxMinValueScaleLineLength,
-                    _skiaGridLinePen, _skDrawGridVersion);
+                    _skiaGridLinePaint, _skDrawGridVersion);
 
                 
             }
@@ -611,6 +686,13 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             SKPoint targetPoint = points[index];
             var cursorPen = new Pen(Brushes.Red, 1.0) { DashStyle = DashStyle.Dash };
             float midDHTL = _drawCursorHighlightTextMarginLength * 0.5f;
+            
+            var cursorValueTextForeground = CursorValueTextForeground;
+            if (cursorValueTextForeground is null) cursorValueTextForeground = Brushes.Red;
+
+            var cursorValueTextBackground = CursorValueTextBackground;
+            if (cursorValueTextBackground is null) cursorValueTextBackground = Brushes.Orange;
+            
             bool isPointInWaveformRect = true;
             // Draw vertical line
             if (targetPoint.X >= gridRect.Left && targetPoint.X <= gridRect.Right)
@@ -619,20 +701,22 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 int actualIndex = _skiaDrawWaveformLine.ActualIndexes[index];
                 DrawTextInfo valueText = null!;
+                
+
                 var startIndex = CumulativePoints - (ulong)_cacheValues.Length;
                 if (SampleRate != 0.0d && double.IsPositive(SampleRate) && double.IsNormal(SampleRate))
                 {
                     var timeValue = (startIndex + (ulong)actualIndex) / SampleRate;
-                    valueText = new DrawTextInfo($"{timeValue} S", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                    valueText = new DrawTextInfo($"{timeValue} S", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, cursorValueTextForeground);
                 }
                 else
                 {
-                    valueText = new DrawTextInfo($"Idx:{actualIndex}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                    valueText = new DrawTextInfo($"Idx:{actualIndex}", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, cursorValueTextForeground);
                 }
                 
                 valueText.Position = new Point(targetPoint.X - valueText.MidWidth, DrawGridBottom + _drawCursorHighlightTextMarginLength);
 
-                context.DrawRectangle(Brushes.Orange, null, new Rect(valueText.Position.X - midDHTL, valueText.Position.Y , valueText.Width + _drawCursorHighlightTextMarginLength, valueText.Height + midDHTL));
+                context.DrawRectangle(cursorValueTextBackground, null, new Rect(valueText.Position.X - midDHTL, valueText.Position.Y , valueText.Width + _drawCursorHighlightTextMarginLength, valueText.Height + midDHTL));
                 context.DrawText(valueText.FormattedText, valueText.Position);
             }
             else
@@ -647,11 +731,11 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 var actualYHeight = YOffset + targetPoint.Y - gridRect.Top;
                 var yHeightScale = (yHeight - actualYHeight) / yHeight;
                 var yValue = MinValue + yHeightScale * yValueRange;
-                DrawTextInfo valueText = new DrawTextInfo($"Val:{yValue:F2} V", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, Brushes.Red);
+                DrawTextInfo valueText = new DrawTextInfo($"Val:{yValue:F2} V", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, cursorValueTextForeground);
                 
                 valueText.Position = new Point(gridRect.Left - valueText.Width - _drawCursorHighlightTextMarginLength, targetPoint.Y - valueText.MidHeight);
 
-                context.DrawRectangle(Brushes.Orange, null, new Rect(valueText.Position.X - midDHTL, valueText.Position.Y, valueText.Width + midDHTL, valueText.Height));
+                context.DrawRectangle(cursorValueTextBackground, null, new Rect(valueText.Position.X - midDHTL, valueText.Position.Y, valueText.Width + midDHTL, valueText.Height));
                 context.DrawText(valueText.FormattedText, valueText.Position);
             }
             else
