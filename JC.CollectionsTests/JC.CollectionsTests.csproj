@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SkiaBaiscDrawing.ExampleApp\SkiaBasicDrawing.ExampleApp.csproj" />
+    <ProjectReference Include="..\JC.Collections\JC.Collections.csproj" />
   </ItemGroup>
 
   <ItemGroup>

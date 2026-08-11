@@ -1,12 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SkiaBasicDrawing.ExampleApp.Models;
+using JC.Collections;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SkiaBasicDrawing.ExampleApp.Models.Tests
+namespace JC.Collections.Tests
 {
     // reference: https://jasson-chou-note.notion.site/C-3b3c3bd1713680c5b8c9f44acfbcaf77
     [TestClass()]

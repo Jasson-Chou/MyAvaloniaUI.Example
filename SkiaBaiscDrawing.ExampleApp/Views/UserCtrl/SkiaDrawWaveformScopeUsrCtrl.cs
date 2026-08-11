@@ -486,10 +486,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if (_cacheValues.Length < 2)
                 return;
             
-            if (PointCount > 0 && _cacheValues.Length > PointCount)
-            {
-                _cacheValues = _cacheValues.AsSpan(_cacheValues.Length - PointCount).ToArray();
-            }
+            //if (PointCount > 0 && _cacheValues.Length > PointCount)
+            //{
+            //    _cacheValues = _cacheValues.AsSpan(_cacheValues.Length - PointCount).ToArray();
+            //}
 
             if (_skiaDrawWaveformLine is null || _skiaDrawWaveformLine.Version != _skDrawWaveformLineVersion)
             {
