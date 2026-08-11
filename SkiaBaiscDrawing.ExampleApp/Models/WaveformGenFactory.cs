@@ -15,12 +15,12 @@ namespace SkiaBasicDrawing.ExampleApp.Models
     }
     public interface IWaveformGenFactory
     {
-        IWaveformSimulator Create(WaveformType type, double frequency, double sampleRate, double amplitude);
+        ISignalGeneration Create(WaveformType type, double frequency, double sampleRate, double amplitude);
     }
 
     public class WaveformGenFactory : IWaveformGenFactory
     {
-        public IWaveformSimulator Create(WaveformType type, double frequency, double sampleRate, double amplitude)
+        public ISignalGeneration Create(WaveformType type, double frequency, double sampleRate, double amplitude)
         {
             switch(type)
             {

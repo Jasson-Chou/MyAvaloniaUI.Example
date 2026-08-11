@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SkiaBasicDrawing.ExampleApp.Models
 {
-    public class SineGenerator: IWaveformSimulator
+    public class SineGenerator: ISignalGeneration
     {
         private readonly double _phaseIncrement; // 每個樣本的相位增量 (弧度)
         private double _phase;                   // 目前相位 (弧度)

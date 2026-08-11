@@ -13,7 +13,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
         int BufferSize { get; }
         ulong CumulativePoints { get; }
         void SetBufferSize(int newSize);
-        void ResetSimulator(IWaveformSimulator newSimulator);
+        void ResetSimulator(ISignalGeneration newSimulator);
         void Start();
         void Pull();
         void Stop();
@@ -27,7 +27,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
     {
         public WaveformRunService() : this(new SineGenerator(1, 1000, 1)) { }
 
-        public WaveformRunService(IWaveformSimulator simulator)
+        public WaveformRunService(ISignalGeneration simulator)
         {
             _simulator = simulator;
             _queue = new DropOldestQueue<float>();
@@ -36,7 +36,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private readonly DropOldestQueue<float> _queue;
         private TimeSpan _lastTime = TimeSpan.Zero;
-        private IWaveformSimulator _simulator;
+        private ISignalGeneration _simulator;
 
         public int BufferSize => _queue.Capacity;
         public ulong CumulativePoints { get; private set; } = 0;
@@ -46,7 +46,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
             _queue.SetCapacity(newSize);
         }
 
-        public void ResetSimulator(IWaveformSimulator newSimulator)
+        public void ResetSimulator(ISignalGeneration newSimulator)
         {
             _simulator = newSimulator;
         }

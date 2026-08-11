@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SkiaBasicDrawing.ExampleApp.Models
 {
-    public interface IWaveformSimulator
+    public interface ISignalGeneration
     {
         float[] GenerateF(TimeSpan startTime, TimeSpan duration);
 
