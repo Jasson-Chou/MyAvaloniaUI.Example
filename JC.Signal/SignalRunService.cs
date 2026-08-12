@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SkiaBasicDrawing.ExampleApp.Models
+namespace JC.Signal
 {
-    public interface IWaveformRunService
+    public interface ISignalRunService
     {
         int BufferSize { get; }
         ulong CumulativePoints { get; }
@@ -23,20 +23,20 @@ namespace SkiaBasicDrawing.ExampleApp.Models
     }
 
 
-    public class WaveformRunService : IWaveformRunService
+    public class SignalRunService : ISignalRunService
     {
-        public WaveformRunService() : this(new SineGenerator(1, 1000, 1)) { }
+        public SignalRunService() : this(new SineGenerator(1, 1000, 1)) { }
 
-        public WaveformRunService(ISignalGeneration simulator)
+        public SignalRunService(ISignalGeneration signalGenerator)
         {
-            _simulator = simulator;
+            _signalGenerator = signalGenerator;
             _queue = new DropOldestQueue<float>();
         }
 
         private readonly Stopwatch _stopwatch = new Stopwatch();
         private readonly DropOldestQueue<float> _queue;
         private TimeSpan _lastTime = TimeSpan.Zero;
-        private ISignalGeneration _simulator;
+        private ISignalGeneration _signalGenerator;
 
         public int BufferSize => _queue.Capacity;
         public ulong CumulativePoints { get; private set; } = 0;
@@ -48,7 +48,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
 
         public void ResetSimulator(ISignalGeneration newSimulator)
         {
-            _simulator = newSimulator;
+            _signalGenerator = newSimulator;
         }
 
         public void Start()
@@ -61,13 +61,13 @@ namespace SkiaBasicDrawing.ExampleApp.Models
 
         public void Pull()
         {
-            if(_stopwatch.Elapsed == _lastTime)
+            if (_stopwatch.Elapsed == _lastTime)
                 return;
-            if(_simulator is null) 
-                throw new InvalidOperationException("Simulator is not set.");
+            if (_signalGenerator is null)
+                throw new InvalidOperationException("Signal generator is not set.");
             var currentTime = _stopwatch.Elapsed;
             var duration = currentTime - _lastTime;
-            var newSamples = _simulator.GenerateF(_lastTime, duration);
+            var newSamples = _signalGenerator.GenerateF(_lastTime, duration);
             CumulativePoints += (ulong)newSamples.LongLength;
             _queue.EnqueueRange(newSamples);
             _lastTime = currentTime;
@@ -91,7 +91,7 @@ namespace SkiaBasicDrawing.ExampleApp.Models
             return _queue.ToArray();
         }
 
-        
+
 
 
     }

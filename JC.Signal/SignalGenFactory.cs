@@ -4,27 +4,27 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SkiaBasicDrawing.ExampleApp.Models
+namespace JC.Signal
 {
-    public enum WaveformType
+    public enum ESignalType
     {
         Sine,
         //Square,
         //Triangle,
         //Sawtooth
     }
-    public interface IWaveformGenFactory
+    public interface ISignalGenFactory
     {
-        ISignalGeneration Create(WaveformType type, double frequency, double sampleRate, double amplitude);
+        ISignalGeneration Create(ESignalType type, double frequency, double sampleRate, double amplitude);
     }
 
-    public class WaveformGenFactory : IWaveformGenFactory
+    public class SignalGenFactory : ISignalGenFactory
     {
-        public ISignalGeneration Create(WaveformType type, double frequency, double sampleRate, double amplitude)
+        public ISignalGeneration Create(ESignalType type, double frequency, double sampleRate, double amplitude)
         {
-            switch(type)
+            switch (type)
             {
-                case WaveformType.Sine:
+                case ESignalType.Sine:
                     return new SineGenerator(frequency, sampleRate, amplitude);
                 //case WaveformType.Square:
                 //    return new SquareGenerator(frequency, sampleRate, amplitude);

@@ -4,6 +4,7 @@ using Avalonia.Rendering;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using JC.Signal;
 using SkiaBasicDrawing.ExampleApp.Models;
 using System;
 using System.Collections.ObjectModel;
@@ -20,11 +21,11 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             }
         }
 
-        public MainViewModel(IUiTimer uiTimer, IWaveformRunService waveformRunService, IWaveformGenFactory waveformGenFactory)
+        public MainViewModel(IUiTimer uiTimer, ISignalRunService signalRunService, ISignalGenFactory signalGenFactory)
         {
             _uiTimer = uiTimer;
-            _waveformRunService = waveformRunService;
-            _waveformGenFactory = waveformGenFactory;
+            _signalRunService = signalRunService;
+            _signalGenFactory = signalGenFactory;
             UserSetting = new UserSettingViewModel();
             if (Design.IsDesignMode)
             {
@@ -43,7 +44,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
                 case nameof(UserSetting.AutoScale):
                     if (UserSetting.AutoScale)
                     {
-                        _waveformRunService.GetMinMax(out float min, out float max);
+                        _signalRunService.GetMinMax(out float min, out float max);
                         UserSetting.MinValue = min;
                         UserSetting.MaxValue = max;
                     }
@@ -52,8 +53,8 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         }
         
         private readonly IUiTimer _uiTimer;
-        private readonly IWaveformRunService _waveformRunService;
-        private readonly IWaveformGenFactory _waveformGenFactory;
+        private readonly ISignalRunService _signalRunService;
+        private readonly ISignalGenFactory _signalGenFactory;
 
         [ObservableProperty]
         private UserSettingViewModel _userSetting;
@@ -66,15 +67,15 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             IsRunning = true;
             PointCount = UserSetting.PointCount;
             SampleRate = UserSetting.SampleRate;
-            var waveformGen = _waveformGenFactory.Create(WaveformType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
-            _waveformRunService.ResetSimulator(waveformGen);
+            var waveformGen = _signalGenFactory.Create(ESignalType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
+            _signalRunService.ResetSimulator(waveformGen);
 
-            if (_waveformRunService.BufferSize != UserSetting.PointCount)
+            if (_signalRunService.BufferSize != UserSetting.PointCount)
             {
-                _waveformRunService.SetBufferSize(UserSetting.PointCount);
+                _signalRunService.SetBufferSize(UserSetting.PointCount);
             }
 
-            _waveformRunService.Start();
+            _signalRunService.Start();
 
             _uiTimer.Tick += _randerTimer_Tick;
             _uiTimer.Interval = TimeSpan.FromMilliseconds(1000.0 / UserSetting.Fps);
@@ -83,20 +84,18 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 
         private void _randerTimer_Tick(object? sender, System.EventArgs e)
         {
-            _waveformRunService.Pull();
-            if (_waveformRunService.GetMinMax(out float min, out float max) &&
+            _signalRunService.Pull();
+            if (_signalRunService.GetMinMax(out float min, out float max) &&
                 true == UserSetting.AutoScale)
             {
                 UserSetting.MinValue = min;
                 UserSetting.MaxValue = max;
             }
-            var values = _waveformRunService.GetValues();
-            CumulativePoints = _waveformRunService.CumulativePoints;
+            var values = _signalRunService.GetValues();
+            CumulativePoints = _signalRunService.CumulativePoints;
             //// for avalonialist, we can use ReplaceAll to update the collection efficiently
             Items.Clear();
             Items.AddRange(values);
-
-            //Items.ReplaceAll(values);
 
         }
 
@@ -105,7 +104,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         {
             _uiTimer.Stop();
             _uiTimer.Tick -= _randerTimer_Tick;
-            _waveformRunService.Stop();
+            _signalRunService.Stop();
             IsRunning = false;
         }
 
@@ -115,7 +114,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             PointCount = UserSetting.PointCount;
             CumulativePoints = (ulong)UserSetting.PointCount;
             SampleRate = UserSetting.SampleRate;
-            var waveformGen = _waveformGenFactory.Create(WaveformType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
+            var waveformGen = _signalGenFactory.Create(ESignalType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
             var buffer = waveformGen.GenerateF(PointCount);
             Items.Clear();
             Items.AddRange(buffer);

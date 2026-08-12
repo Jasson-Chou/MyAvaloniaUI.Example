@@ -33,5 +33,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\JC.Collections\JC.Collections.csproj" />
+    <ProjectReference Include="..\JC.Signal\JC.Signal.csproj" />
   </ItemGroup>
 </Project>

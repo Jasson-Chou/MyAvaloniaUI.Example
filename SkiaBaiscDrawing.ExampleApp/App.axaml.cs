@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using CommunityToolkit.Mvvm.DependencyInjection;
+using JC.Signal;
 using Microsoft.Extensions.DependencyInjection;
 using SkiaBasicDrawing.ExampleApp.Models;
 using SkiaBasicDrawing.ExampleApp.ViewModels;
@@ -20,8 +21,8 @@ namespace SkiaBasicDrawing.ExampleApp
         {
             var services = new ServiceCollection();
             services.AddTransient<IUiTimer, DefaultUiTimer>();
-            services.AddTransient<IWaveformRunService, WaveformRunService>();
-            services.AddTransient<IWaveformGenFactory, WaveformGenFactory>();
+            services.AddTransient<ISignalRunService, SignalRunService>();
+            services.AddTransient<ISignalGenFactory, SignalGenFactory>();
             services.AddSingleton<MainViewModel>();
 
             Ioc.Default.ConfigureServices(services.BuildServiceProvider());

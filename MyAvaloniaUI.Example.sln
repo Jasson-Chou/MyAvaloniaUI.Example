@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JC.Collections", "JC.Collec
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JC.CollectionsTests", "JC.CollectionsTests\JC.CollectionsTests.csproj", "{CDCB0BA4-80B7-5AAE-9E84-62D971CD6AE9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JC.Signal", "JC.Signal\JC.Signal.csproj", "{D5AAC91F-406F-4C1E-A9D1-53E4264F0D0F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{CDCB0BA4-80B7-5AAE-9E84-62D971CD6AE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDCB0BA4-80B7-5AAE-9E84-62D971CD6AE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDCB0BA4-80B7-5AAE-9E84-62D971CD6AE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5AAC91F-406F-4C1E-A9D1-53E4264F0D0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5AAC91F-406F-4C1E-A9D1-53E4264F0D0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5AAC91F-406F-4C1E-A9D1-53E4264F0D0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5AAC91F-406F-4C1E-A9D1-53E4264F0D0F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
