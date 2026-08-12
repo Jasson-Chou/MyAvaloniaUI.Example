@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JC.CollectionsTests", "JC.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JC.Signal", "JC.Signal\JC.Signal.csproj", "{D5AAC91F-406F-4C1E-A9D1-53E4264F0D0F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JC.Waveform.Core", "JC.Waveform.Core\JC.Waveform.Core.csproj", "{AA369559-8679-4683-9C46-547189F1119E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{D5AAC91F-406F-4C1E-A9D1-53E4264F0D0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5AAC91F-406F-4C1E-A9D1-53E4264F0D0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5AAC91F-406F-4C1E-A9D1-53E4264F0D0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA369559-8679-4683-9C46-547189F1119E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA369559-8679-4683-9C46-547189F1119E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA369559-8679-4683-9C46-547189F1119E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA369559-8679-4683-9C46-547189F1119E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

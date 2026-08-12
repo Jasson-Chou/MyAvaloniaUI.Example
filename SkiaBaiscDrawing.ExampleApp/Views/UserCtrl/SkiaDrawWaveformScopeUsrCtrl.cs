@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
+using JC.Waveform.Core;
 using SkiaSharp;
 using System;
 using System.Collections;
@@ -15,6 +16,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -402,8 +404,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private int _skDrawTimeAxisVersion;
         private SkiaDrawTimeAxis? _skiaDrawTimeAxis;
 
-        private float _xStep = float.NaN;
-        private bool _isDownSampling = false;
+        //private float _xStep = float.NaN;
+        //private bool _isDownSampling = false;
+
+        private WaveformBuildResult _waveformBuildResult = WaveformBuildResult.Empty;
 
         private bool _showCursor = false;
         private Point _pointerPosition;
@@ -499,18 +503,21 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     _drawScopeWaveformLineRect = new SKRect(DrawWaveformLineLeft, DrawWaveformLineTop, 0, 0);
                     _drawScopeWaveformLineRect.Size = new SKSize(DrawWaveformWidth, DrawWaveformHeight);
                 }
+                _waveformBuildResult = WaveformCore.Build(_cacheValues, 
+                    new WaveformRect(DrawWaveformLineLeft, DrawWaveformLineTop, _drawScopeWaveformLineRect.Right, _drawScopeWaveformLineRect.Bottom),
+                    new ValueRange(MinValue, MaxValue), new WaveformTransform(XOffset, YOffset, XScale, YScale), PointCount);
 
-                var (points, actualIndexes) = BuildScopeWaveformPoints(_cacheValues, PointCount,
-                _drawScopeWaveformLineRect,
-                MaxValue, MinValue, out _xStep, out _isDownSampling, XOffset, YOffset, XScale, YScale);
-                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(points, 
-                    actualIndexes, _skiaWaveformLinePen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
+                //var (points, actualIndexes) = BuildScopeWaveformPoints(_cacheValues, PointCount,
+                //_drawScopeWaveformLineRect,
+                //MaxValue, MinValue, out _xStep, out _isDownSampling, XOffset, YOffset, XScale, YScale);
+                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(_waveformBuildResult.Points.AsSKPoints(),
+                    _waveformBuildResult.ActualIndexes, _skiaWaveformLinePen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
 
             }
 
             context.Custom(_skiaDrawWaveformLine);
 
-            if(_isDownSampling)
+            if(_waveformBuildResult.IsDownSampled)
             {
                 if(_downSamplingFormattedText is null)
                 {
@@ -523,7 +530,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private void DrawTimeAxis(DrawingContext context)
         {
             if (_skiaDrawWaveformLine is null) return;
-            if (float.IsNaN(_xStep)) return;
+            if (float.IsNaN(_waveformBuildResult.XStep)) return;
 
             _skiaTimeAxisLinePaint = _skiaTimeAxisLinePaint.CompareOrGet(TimeAxisLineColor, 1.0f);
             _timeAxisTickFont = _timeAxisTickFont.CompareOrGet(SKTypeface.Default, 12, scaleX:1.0f);
@@ -551,7 +558,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     var points = _skiaDrawWaveformLine.Points;
                     var actualIndexes = _skiaDrawWaveformLine.ActualIndexes;
                     int totalPointCount = _skiaDrawWaveformLine.Points.Length;
-                    float tickSpacingWidth = (float)(totalPointCount * _xStep) * (float)(1.0d - TickSpacingScale);
+                    float tickSpacingWidth = (float)(totalPointCount * _waveformBuildResult.XStep) * (float)(1.0d - TickSpacingScale);
 
                     var startIndex = CumulativePoints - (ulong)_cacheValues.Length;
                     float lastTickXOffset = firstPointX;
@@ -795,7 +802,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 : upper;
         }
 
-        private static (SKPoint[] skPoints, int[] actualIndexes) BuildScopeWaveformPoints(ReadOnlySpan<float> values, int pointCount, SKRect rect,
+        private static (SKPoint[] skPoints, int[] actualIndexes) BuildScopeWaveformPoints(
+            ReadOnlySpan<float> values, int pointCount, SKRect rect,
             float maxValue, float minValue, out float xStep, out bool isDownSampling, 
             float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
         {
@@ -909,9 +917,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         
         private class SkiaDrawWaveformLine : ICustomDrawOperation
         {
-            public SkiaDrawWaveformLine(SKPoint[] points, int[] actualIndexes, SkiaPaint skiaPen, SKRect bounds, int version)
+            public SkiaDrawWaveformLine(ReadOnlySpan<SKPoint> points, int[] actualIndexes, SkiaPaint skiaPen, SKRect bounds, int version)
             {
-                _points = points;
+                _points = points.ToArray();
                 _actualIndexes = actualIndexes;
                 _sKiaPen = skiaPen;
                 _bounds = bounds;
@@ -1236,6 +1244,12 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _typeface.Dispose();
             }
         }
+    }
+
+    internal static class SkiaWaveformExtensions
+    {
+        public static ReadOnlySpan<SKPoint> AsSKPoints(this WaveformPoint[] points)
+            => MemoryMarshal.Cast<WaveformPoint, SKPoint>(points);
     }
 
     internal static class SkiaObjectExtensions

@@ -34,5 +34,6 @@
   <ItemGroup>
     <ProjectReference Include="..\JC.Collections\JC.Collections.csproj" />
     <ProjectReference Include="..\JC.Signal\JC.Signal.csproj" />
+    <ProjectReference Include="..\JC.Waveform.Core\JC.Waveform.Core.csproj" />
   </ItemGroup>
 </Project>

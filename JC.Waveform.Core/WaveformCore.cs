@@ -1,0 +1,151 @@
+﻿using System.Runtime.InteropServices;
+
+namespace JC.Waveform.Core
+{
+    public readonly record struct WaveformTransform(
+    float XOffset = 0f,
+    float YOffset = 0f,
+    float XScale = 1f,
+    float YScale = 1f)
+    {
+        public static WaveformTransform Identity => new();
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly record struct WaveformPoint(float X, float Y)
+    {
+        public static WaveformPoint Zero => new(0f, 0f);
+    }
+
+    public readonly record struct WaveformRect(float Left, float Top, float Right, float Bottom)
+    {
+        public static WaveformRect Zero => new(0f, 0f, 0f, 0f);
+    }
+
+    public readonly record struct ValueRange(float Min, float Max)
+    {
+        public float Span => Max - Min;
+    }
+
+    public readonly record struct WaveformBuildResult(
+    WaveformPoint[] Points,
+    int[] ActualIndexes,
+    float XStep,
+    bool IsDownSampled)
+    {
+        public static WaveformBuildResult Empty =>
+            new(Array.Empty<WaveformPoint>(), Array.Empty<int>(), float.NaN, false);
+    }
+    public static class WaveformCore
+    {
+        public static WaveformBuildResult Build(ReadOnlySpan<float> values,
+            in WaveformRect rect,
+            in ValueRange valueRange,
+            in WaveformTransform transform,
+            int? fixedPointCount = null)
+        {
+            if(values.Length == 0)
+                return WaveformBuildResult.Empty;
+
+            WaveformPoint[] waveformPoints = Array.Empty<WaveformPoint>();
+            int[] actualIndexes = Array.Empty<int>();
+            float xStep = 0f;
+            bool isDownSampled = false;
+
+            float left = rect.Left;
+            float top = rect.Top;
+            float width = rect.Right - rect.Left;
+            float height = rect.Bottom - rect.Top;
+
+            int canShowColumns = (int)MathF.Ceiling(width);
+
+            float maxValue = valueRange.Max;
+            float yOffset = transform.YOffset;
+
+            float yRange = valueRange.Span;
+            float yScaleFactor = (yRange != 0) ? (height * transform.YScale / yRange) : 1.0f; // 計算 Y 軸縮放因子
+            float getYValue(float value) => top + (maxValue - value) * yScaleFactor - yOffset; // 計算 Y 軸座標
+
+            if (fixedPointCount is not null && fixedPointCount > 0)
+            {
+                xStep = (float)(width * transform.XScale / (fixedPointCount - 1)); // 計算寬度，當固定點數時，使用 pointCount 來計算 xStep
+            }
+            else
+            {
+                xStep = (float)(width * transform.XScale / (values.Length - 1)); // 計算寬度，適合動態點數，使用 n 來計算 xStep
+            }
+
+            int startIndex = transform.XOffset > 0 ? (int)(transform.XOffset / xStep) : 0;
+            int endIndex = Math.Min(values.Length - 1, startIndex + (int)Math.Ceiling(width / xStep));
+            int destCount = endIndex - startIndex + 1;
+
+            if (destCount <= canShowColumns * 2)
+            {
+                //destCount = Math.Min(destCount, n - startIndex);
+                waveformPoints = new WaveformPoint[destCount];
+                actualIndexes = new int[destCount];
+
+                for (int i = 0; i < destCount && startIndex + i < values.Length; i++)
+                {
+                    int valueIndex = startIndex + i;
+                    float actualX = valueIndex * xStep - transform.XOffset + left;
+                    float y = getYValue(values[valueIndex]);
+                    waveformPoints[i] = new WaveformPoint(actualX, y);
+                    actualIndexes[i] = valueIndex;
+                }
+                isDownSampled = false;
+            }
+            else
+            {
+                // 採樣顯示，避免過多的點數 (min-max downsampling)
+                int sampleRate = (int)Math.Ceiling((double)destCount / canShowColumns);
+                waveformPoints = new WaveformPoint[canShowColumns * 2];
+                actualIndexes = new int[canShowColumns * 2];
+                int sKPointIdx = 0;
+                for (int i = 0; i < canShowColumns; i++)
+                {
+                    int cLIdx = Math.Min(startIndex + (i * sampleRate), values.Length - 1);
+                    int cHIdx = Math.Min(cLIdx + sampleRate - 1, values.Length - 1);
+
+                    float cLValue = values[cLIdx];
+                    float cHValue = values[cHIdx];
+
+                    for (int j = cLIdx; j <= cHIdx; j++)
+                    {
+                        if (cLValue > values[j])
+                        {
+                            cLValue = values[j];
+                            cLIdx = j;
+                        }
+
+                        if (cHValue < values[j])
+                        {
+                            cHValue = values[j];
+                            cHIdx = j;
+                        }
+                    }
+
+                    float cLPosX = left + ((cLIdx - startIndex) * xStep);
+                    float cHPosX = left + ((cHIdx - startIndex) * xStep);
+
+                    if (cLIdx < cHIdx)
+                    {
+                        actualIndexes[sKPointIdx] = cLIdx;
+                        waveformPoints[sKPointIdx++] = new WaveformPoint(cLPosX, getYValue(cLValue));
+                        actualIndexes[sKPointIdx] = cHIdx;
+                        waveformPoints[sKPointIdx++] = new WaveformPoint(cHPosX, getYValue(cHValue));
+                    }
+                    else
+                    {
+                        actualIndexes[sKPointIdx] = cHIdx;
+                        waveformPoints[sKPointIdx++] = new WaveformPoint(cHPosX, getYValue(cHValue));
+                        actualIndexes[sKPointIdx] = cLIdx;
+                        waveformPoints[sKPointIdx++] = new WaveformPoint(cLPosX, getYValue(cLValue));
+                    }
+
+                }
+                isDownSampled = true;
+            }
+            return new WaveformBuildResult(waveformPoints, actualIndexes, xStep, isDownSampled);
+        }
+    }
+}
