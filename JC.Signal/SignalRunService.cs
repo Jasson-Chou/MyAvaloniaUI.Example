@@ -13,7 +13,7 @@ namespace JC.Signal
         int BufferSize { get; }
         ulong CumulativePoints { get; }
         void SetBufferSize(int newSize);
-        void ResetSimulator(ISignalGeneration newSimulator);
+        void ResetGeneration(ISignalGeneration generation);
         void Start();
         void Pull();
         void Stop();
@@ -46,9 +46,9 @@ namespace JC.Signal
             _queue.SetCapacity(newSize);
         }
 
-        public void ResetSimulator(ISignalGeneration newSimulator)
+        public void ResetGeneration(ISignalGeneration generation)
         {
-            _signalGenerator = newSimulator;
+            _signalGenerator = generation;
         }
 
         public void Start()

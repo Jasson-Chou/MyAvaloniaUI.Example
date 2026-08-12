@@ -68,7 +68,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             PointCount = UserSetting.PointCount;
             SampleRate = UserSetting.SampleRate;
             var waveformGen = _signalGenFactory.Create(ESignalType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
-            _signalRunService.ResetSimulator(waveformGen);
+            _signalRunService.ResetGeneration(waveformGen);
 
             if (_signalRunService.BufferSize != UserSetting.PointCount)
             {
