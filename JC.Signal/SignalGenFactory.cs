@@ -15,17 +15,17 @@ namespace JC.Signal
     }
     public interface ISignalGenFactory
     {
-        ISignalGeneration Create(ESignalType type, double frequency, double sampleRate, double amplitude);
+        ISignalGeneration Create(ESignalType type, double frequency, double sampleRate, double phase, double amplitude);
     }
 
     public class SignalGenFactory : ISignalGenFactory
     {
-        public ISignalGeneration Create(ESignalType type, double frequency, double sampleRate, double amplitude)
+        public ISignalGeneration Create(ESignalType type, double frequency, double sampleRate, double phase, double amplitude)
         {
             switch (type)
             {
                 case ESignalType.Sine:
-                    return new SineGenerator(frequency, sampleRate, amplitude);
+                    return new SineGenerator(frequency, sampleRate, phase, amplitude);
                 //case WaveformType.Square:
                 //    return new SquareGenerator(frequency, sampleRate, amplitude);
                 //case WaveformType.Triangle:

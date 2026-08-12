@@ -60,7 +60,7 @@
         
 
         <Grid Grid.Row="0" Grid.Column="2" Grid.RowSpan="2"
-              ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto,*">
+              ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto,*">
             <Grid.Styles>
                 <Style Selector="TextBlock.align">
                     <Setter Property="Grid.Column" Value="0"/>
@@ -104,27 +104,33 @@
                            Grid.Row="6" Grid.Column="2" Minimum="1" Maximum="1000000" Value="{Binding UserSetting.SampleRate}" 
                            InnerRightContent="Hz "
                            Classes="primary"/>
+
+            <TextBlock Text="Phase:" Grid.Row="7" Classes="primary align"/>
+            <NumericUpDown x:Name="phaseNumericUpDown" HorizontalAlignment="Stretch" 
+                           Grid.Row="7" Grid.Column="2" Minimum="-180" Maximum="180" Value="{Binding UserSetting.PhaseDegree}" 
+                           InnerRightContent="degree" FormatString="0.##"
+                           Classes="primary"/>
             
-            <TextBlock Text="Amplitude:" Grid.Row="7" Classes="primary align"/>
-            <NumericUpDown x:Name="amplitudeNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="7" Grid.Column="2" Value="{Binding UserSetting.Amplitude}" 
+            <TextBlock Text="Amplitude:" Grid.Row="8" Classes="primary align"/>
+            <NumericUpDown x:Name="amplitudeNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="8" Grid.Column="2" Value="{Binding UserSetting.Amplitude}" 
                            InnerRightContent="V "
                            Classes="primary"/>
             
-            <TextBlock Text="Auto Max/Min Scale:" Grid.Row="8" Classes="primary align"/>
-            <CheckBox x:Name="autoScaleCheckBox" HorizontalAlignment="Center" Grid.Row="8" Grid.Column="2" IsChecked="{Binding UserSetting.AutoScale}" Classes="primary"/>
+            <TextBlock Text="Auto Max/Min Scale:" Grid.Row="9" Classes="primary align"/>
+            <CheckBox x:Name="autoScaleCheckBox" HorizontalAlignment="Center" Grid.Row="9" Grid.Column="2" IsChecked="{Binding UserSetting.AutoScale}" Classes="primary"/>
             
-            <TextBlock Text="Max Value:" Grid.Row="9" Classes="primary align"/>
+            <TextBlock Text="Max Value:" Grid.Row="10" Classes="primary align"/>
             <NumericUpDown x:Name="maxValueNumericUpDown" HorizontalAlignment="Stretch" 
                            IsEnabled="{Binding !#autoScaleCheckBox.IsChecked}"
-                           Grid.Row="9" Grid.Column="2" Value="{Binding UserSetting.MaxValue}" InnerRightContent="V " Classes="primary"/>
+                           Grid.Row="10" Grid.Column="2" Value="{Binding UserSetting.MaxValue}" InnerRightContent="V " Classes="primary"/>
             
-            <TextBlock Text="Min Value:" Grid.Row="10" Classes="primary align"/>
+            <TextBlock Text="Min Value:" Grid.Row="11" Classes="primary align"/>
             <NumericUpDown x:Name="minValueNumericUpDown" HorizontalAlignment="Stretch" 
                            IsEnabled="{Binding !#autoScaleCheckBox.IsChecked}"
-                           Grid.Row="10" Grid.Column="2" Value="{Binding UserSetting.MinValue}" InnerRightContent="V " Classes="primary"/>
+                           Grid.Row="11" Grid.Column="2" Value="{Binding UserSetting.MinValue}" InnerRightContent="V " Classes="primary"/>
             
 
-            <StackPanel                Grid.Row="11" Grid.Column="2" Orientation="Horizontal" Margin="0 5" HorizontalAlignment="Right">
+            <StackPanel                Grid.Row="12" Grid.Column="2" Orientation="Horizontal" Margin="0 5" HorizontalAlignment="Right">
                 <!--<Button x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary"/>-->
                 <SplitButton x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary">
                     <SplitButton.Flyout>

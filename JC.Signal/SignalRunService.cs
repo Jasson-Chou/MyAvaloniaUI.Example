@@ -25,7 +25,7 @@ namespace JC.Signal
 
     public class SignalRunService : ISignalRunService
     {
-        public SignalRunService() : this(new SineGenerator(1, 1000, 1)) { }
+        public SignalRunService() : this(new SineGenerator(1000)) { }
 
         public SignalRunService(ISignalGeneration signalGenerator)
         {

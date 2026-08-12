@@ -11,16 +11,31 @@ namespace JC.Signal
         private readonly double _phaseIncrement; // 每個樣本的相位增量 (弧度)
         private double _phase;                   // 目前相位 (弧度)
 
+        /// <summary>
+        /// 起始相位 (弧度)
+        /// </summary>
+        public double StartPhase { get; }          // 起始相位 (弧度)
+        /// <summary>
+        /// 頻率 (Hz)
+        /// </summary>
         public double Frequency { get; }   // 頻率 (Hz)
+        /// <summary>
+        /// 取樣率 (samples/sec)
+        /// </summary>
         public double SampleRate { get; }  // 取樣率 (samples/sec)
+        /// <summary>
+        /// 振幅
+        /// </summary>
         public double Amplitude { get; }   // 振幅
 
-        public SineGenerator(double frequency, double sampleRate = 44100, double amplitude = 1.0)
+        public SineGenerator(double frequency, double sampleRate = 44100, double phase = 0, double amplitude = 1.0)
         {
 
             Frequency = frequency;
             SampleRate = sampleRate;
             Amplitude = amplitude;
+            StartPhase = phase;
+            _phase = phase;
             _phaseIncrement = Math.Tau * frequency / sampleRate; // 2π * f / fs => 2π * (f/fs) = 2π * (cycles per sample)
         }
 
@@ -85,7 +100,7 @@ namespace JC.Signal
             // 只保留週期的小數部分，避免大時間值造成精度問題
             double cycles = Frequency * timeSeconds;
             double phase = Math.Tau * (cycles - Math.Floor(cycles));
-            return Amplitude * Math.Sin(phase);
+            return Amplitude * Math.Sin(StartPhase + phase);
         }
 
         /// <summary>計算指定時間點的樣本值 (TimeSpan 多載)。</summary>

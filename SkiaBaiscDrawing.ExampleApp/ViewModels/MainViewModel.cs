@@ -67,7 +67,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             IsRunning = true;
             PointCount = UserSetting.PointCount;
             SampleRate = UserSetting.SampleRate;
-            var waveformGen = _signalGenFactory.Create(ESignalType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
+            var waveformGen = _signalGenFactory.Create(ESignalType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Phase, UserSetting.Amplitude);
             _signalRunService.ResetGeneration(waveformGen);
 
             if (_signalRunService.BufferSize != UserSetting.PointCount)
@@ -114,7 +114,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             PointCount = UserSetting.PointCount;
             CumulativePoints = (ulong)UserSetting.PointCount;
             SampleRate = UserSetting.SampleRate;
-            var waveformGen = _signalGenFactory.Create(ESignalType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Amplitude);
+            var waveformGen = _signalGenFactory.Create(ESignalType.Sine, UserSetting.Frequency, UserSetting.SampleRate, UserSetting.Phase, UserSetting.Amplitude);
             var buffer = waveformGen.GenerateF(PointCount);
             Items.Clear();
             Items.AddRange(buffer);
@@ -168,6 +168,11 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 
         [ObservableProperty]
         private float _frequency = 5.0f;
+
+        [ObservableProperty]
+        private float _phaseDegree = 0.0f;
+
+        public float Phase => PhaseDegree * (float)Math.PI / 180.0f;
 
         [ObservableProperty]
         private float _amplitude = 1.0f;
