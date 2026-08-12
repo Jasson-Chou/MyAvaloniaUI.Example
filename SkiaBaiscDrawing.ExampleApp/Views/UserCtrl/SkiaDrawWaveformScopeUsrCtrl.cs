@@ -796,7 +796,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         }
 
         private static (SKPoint[] skPoints, int[] actualIndexes) BuildScopeWaveformPoints(ReadOnlySpan<float> values, int pointCount, SKRect rect,
-            float maxValue, float minValue, out float xStep, out bool isDownSampling, float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
+            float maxValue, float minValue, out float xStep, out bool isDownSampling, 
+            float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
         {
             int n = values.Length;
             isDownSampling = false;
