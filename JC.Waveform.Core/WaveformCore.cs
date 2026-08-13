@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace JC.Waveform.Core
 {
@@ -17,33 +18,6 @@ namespace JC.Waveform.Core
     public readonly record struct WaveformPoint(float X, float Y)
     {
         public static WaveformPoint Zero => new(0f, 0f);
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public readonly record struct WaveformRect(float Left, float Top, float Right, float Bottom)
-    {
-        public static WaveformRect Zero => new(0f, 0f, 0f, 0f);
-
-        public bool IsEmpty => Left == Right || Top == Bottom;
-
-        public bool Contains(float x, float y) => x >= Left && x <= Right && y >= Top && y <= Bottom;
-
-        public bool Contains(WaveformPoint point) => Contains(point.X, point.Y);
-
-        public bool Equals(float x, float y, float width, float height)
-        {
-            return Left == x && Top == y && Right == (x + width) && Bottom == (y + height);
-        }
-
-        public readonly float Width => Right - Left;
-
-        public readonly float Height => Bottom - Top;
-
-        public readonly float MidX => Left + (Width / 2f);
-
-        public readonly float MidY => Top + (Height / 2f);
-
-        public static WaveformRect Create(float x, float y, float width, float height) =>
-            new(x, y, x + width, y + height);
     }
 
     public readonly record struct ValueRange(float Min, float Max)
@@ -68,14 +42,13 @@ namespace JC.Waveform.Core
     public static class WaveformCore
     {
         public static WaveformBuildResult Build(ReadOnlySpan<float> values,
-            in WaveformRect rect,
+            in RectangleF rect,
             in ValueRange valueRange,
             in WaveformTransform transform,
             int? fixedPointCount = null)
         {
             if(values.Length == 0)
                 return WaveformBuildResult.Empty;
-
             WaveformPoint[] waveformPoints = Array.Empty<WaveformPoint>();
             int[] actualIndexes = Array.Empty<int>();
             float xStep = 0f;
@@ -83,8 +56,8 @@ namespace JC.Waveform.Core
 
             float left = rect.Left;
             float top = rect.Top;
-            float width = rect.Right - rect.Left;
-            float height = rect.Bottom - rect.Top;
+            float width = rect.Width;
+            float height = rect.Height;
 
             int canShowColumns = (int)MathF.Ceiling(width);
 

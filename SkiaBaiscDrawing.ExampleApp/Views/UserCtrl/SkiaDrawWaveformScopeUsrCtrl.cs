@@ -406,7 +406,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         //private float _xStep = float.NaN;
         //private bool _isDownSampling = false;
 
-        private WaveformRect _waveformBuildRect = WaveformRect.Zero;
+        private System.Drawing.RectangleF _waveformBuildRect = System.Drawing.RectangleF.Empty;
         private WaveformTransform _waveformBuildTransform = WaveformTransform.Identity;
         private ValueRange _waveformBuildValueRange = ValueRange.Zero;
         private WaveformBuildResult _waveformBuildResult = WaveformBuildResult.Empty;
@@ -502,7 +502,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 if(_waveformBuildRect.IsEmpty || false == _waveformBuildRect.Equals(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformWidth, DrawWaveformHeight))
                 {
-                    _waveformBuildRect = new WaveformRect(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformLineLeft + DrawWaveformWidth, DrawWaveformLineTop + DrawWaveformHeight);
+                    _waveformBuildRect = new System.Drawing.RectangleF(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformWidth, DrawWaveformHeight);
                 }
 
                 if(false == _waveformBuildTransform.Equals(XOffset, YOffset, XScale, YScale))
@@ -645,7 +645,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 if (_waveformBuildRect.IsEmpty || false == _waveformBuildRect.Equals(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformWidth, DrawWaveformHeight))
                 {
-                    _waveformBuildRect = new WaveformRect(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformLineLeft + DrawWaveformWidth, DrawWaveformLineTop + DrawWaveformHeight);
+                    _waveformBuildRect = new System.Drawing.RectangleF(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformWidth, DrawWaveformHeight);
                 }
 
                 IBrush? maxMinTextForeground = MaxMinTextForeground;
@@ -1146,9 +1146,12 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         public static ReadOnlySpan<SKPoint> AsSKPoints(this WaveformPoint[] points)
             => MemoryMarshal.Cast<WaveformPoint, SKPoint>(points);
 
-        public static SKRect AsSKRect(this WaveformRect rect)
+        public static SKRect AsSKRect(this System.Drawing.RectangleF rect)
             => new SKRect(rect.Left, rect.Top, rect.Right, rect.Bottom);
         //=> MemoryMarshal.Cast<WaveformRect, SKRect>(MemoryMarshal.CreateReadOnlySpan(ref rect, 1))[0];
+
+        public static bool Equals(this System.Drawing.RectangleF rect, float left, float top, float width, float height)
+            => rect.Left == left && rect.Top == top && rect.Width == width && rect.Height == height;
     }
 
     internal static class SkiaObjectExtensions
