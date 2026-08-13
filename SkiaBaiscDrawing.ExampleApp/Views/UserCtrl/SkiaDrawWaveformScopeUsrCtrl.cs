@@ -395,7 +395,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
 
         private SKRect _drawRect = SKRect.Empty;
-        private SKRect _drawScopeWaveformLineRect = SKRect.Empty;
         private SKRect _drawScopeGridRect = SKRect.Empty;
         private int _skDrawWaveformLineVersion;
         private SkiaDrawWaveformLine? _skiaDrawWaveformLine;
@@ -407,6 +406,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         //private float _xStep = float.NaN;
         //private bool _isDownSampling = false;
 
+        private WaveformRect _waveformBuildRect = WaveformRect.Zero;
+        private WaveformTransform _waveformBuildTransform = WaveformTransform.Identity;
+        private ValueRange _waveformBuildValueRange = ValueRange.Zero;
         private WaveformBuildResult _waveformBuildResult = WaveformBuildResult.Empty;
 
         private bool _showCursor = false;
@@ -498,20 +500,27 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if (_skiaDrawWaveformLine is null || _skiaDrawWaveformLine.Version != _skDrawWaveformLineVersion)
             {
 
-                if(_drawScopeWaveformLineRect.IsEmpty || _drawScopeWaveformLineRect.Width != DrawWaveformWidth || _drawScopeWaveformLineRect.Height != DrawWaveformHeight)
+                if(_waveformBuildRect.IsEmpty || false == _waveformBuildRect.Equals(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformWidth, DrawWaveformHeight))
                 {
-                    _drawScopeWaveformLineRect = new SKRect(DrawWaveformLineLeft, DrawWaveformLineTop, 0, 0);
-                    _drawScopeWaveformLineRect.Size = new SKSize(DrawWaveformWidth, DrawWaveformHeight);
+                    _waveformBuildRect = new WaveformRect(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformLineLeft + DrawWaveformWidth, DrawWaveformLineTop + DrawWaveformHeight);
                 }
-                _waveformBuildResult = WaveformCore.Build(_cacheValues, 
-                    new WaveformRect(DrawWaveformLineLeft, DrawWaveformLineTop, _drawScopeWaveformLineRect.Right, _drawScopeWaveformLineRect.Bottom),
-                    new ValueRange(MinValue, MaxValue), new WaveformTransform(XOffset, YOffset, XScale, YScale), PointCount);
 
-                //var (points, actualIndexes) = BuildScopeWaveformPoints(_cacheValues, PointCount,
-                //_drawScopeWaveformLineRect,
-                //MaxValue, MinValue, out _xStep, out _isDownSampling, XOffset, YOffset, XScale, YScale);
+                if(false == _waveformBuildTransform.Equals(XOffset, YOffset, XScale, YScale))
+                {
+                    _waveformBuildTransform = new WaveformTransform(XOffset, YOffset, XScale, YScale);
+                }
+                
+                if(false == _waveformBuildValueRange.Equals(MinValue, MaxValue))
+                {
+                    _waveformBuildValueRange = new ValueRange(MinValue, MaxValue);
+                }
+
+                _waveformBuildResult = WaveformCore.Build(_cacheValues, 
+                    _waveformBuildRect,
+                    _waveformBuildValueRange, _waveformBuildTransform, PointCount);
+
                 _skiaDrawWaveformLine = new SkiaDrawWaveformLine(_waveformBuildResult.Points.AsSKPoints(),
-                    _waveformBuildResult.ActualIndexes, _skiaWaveformLinePen, _drawScopeWaveformLineRect, _skDrawWaveformLineVersion);
+                    _waveformBuildResult.ActualIndexes, _skiaWaveformLinePen, _waveformBuildRect.AsSKRect(), _skDrawWaveformLineVersion);
 
             }
 
@@ -634,10 +643,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     _drawScopeGridRect.Size = new SKSize(DrawGridWidth, DrawGridHeight);
                 }
 
-                if (_drawScopeWaveformLineRect.IsEmpty || _drawScopeWaveformLineRect.Width != DrawWaveformWidth || _drawScopeWaveformLineRect.Height != DrawWaveformHeight)
+                if (_waveformBuildRect.IsEmpty || false == _waveformBuildRect.Equals(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformWidth, DrawWaveformHeight))
                 {
-                    _drawScopeWaveformLineRect = new SKRect(DrawWaveformLineLeft, DrawWaveformLineTop, 0, 0);
-                    _drawScopeWaveformLineRect.Size = new SKSize(DrawWaveformWidth, DrawWaveformHeight);
+                    _waveformBuildRect = new WaveformRect(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformLineLeft + DrawWaveformWidth, DrawWaveformLineTop + DrawWaveformHeight);
                 }
 
                 IBrush? maxMinTextForeground = MaxMinTextForeground;
@@ -655,7 +663,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _minValueDrawText = _minValueDrawText.CompareOrGet(minValueText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, maxMinTextForeground);
                 _minValueDrawText.Position = new Point(drawGridMaxMinValueScaleLineLeft - _minValueDrawText.Width - _drawMaxMinValueTextMargin, actualMinValueTop - _minValueDrawText.MidHeight);
 
-                _skiaDrawGrid = new SkiaDrawGrid(_drawRect, _drawScopeGridRect, _drawScopeWaveformLineRect,
+                _skiaDrawGrid = new SkiaDrawGrid(_drawRect, _drawScopeGridRect, _waveformBuildRect.AsSKRect(),
                     actualMaxValueTop, actualMinValueTop, DrawGridMaxMinValueScaleLineLength,
                     _skiaGridLinePaint, _skDrawGridVersion);
 
@@ -663,9 +671,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             }
 
             context.Custom(_skiaDrawGrid);
-            if(_maxValueDrawText is not null && _drawScopeWaveformLineRect.Top <= actualMaxValueTop)
+            if(_maxValueDrawText is not null && _waveformBuildRect.Top <= actualMaxValueTop)
                 _maxValueDrawText?.Draw(context);
-            if (_minValueDrawText is not null && _drawScopeWaveformLineRect.Bottom >= actualMinValueTop)
+            if (_minValueDrawText is not null && _waveformBuildRect.Bottom >= actualMinValueTop)
                 _minValueDrawText?.Draw(context);
         }
 
@@ -801,119 +809,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 ? lower
                 : upper;
         }
-
-        private static (SKPoint[] skPoints, int[] actualIndexes) BuildScopeWaveformPoints(
-            ReadOnlySpan<float> values, int pointCount, SKRect rect,
-            float maxValue, float minValue, out float xStep, out bool isDownSampling, 
-            float xOffset= 0.0f, float yOffset = 0.0f, float xScale = 1.0f, float yScale = 1.0f)
-        {
-            int n = values.Length;
-            isDownSampling = false;
-            xStep = float.NaN;
-            if (n == 0) 
-            {
-                return (Array.Empty<SKPoint>(), Array.Empty<int>());
-            }
-            
-            float left = rect.Left;
-            float top = rect.Top;
-            float width = rect.Width;
-            float higth = rect.Height;
-
-            int canShowColumns = (int)Math.Ceiling(width);
-
-            float yRange = maxValue - minValue;
-            float yScaleFactor = (yRange != 0) ? (higth * yScale / yRange) : 1.0f; // 計算 Y 軸縮放因子
-            float getYValue(float value) => top + (maxValue - value) * yScaleFactor - yOffset; // 計算 Y 軸座標
-
-            xStep = 0.0f;
-
-            if (pointCount > 0)
-            {
-                xStep = (float)(width * xScale / (pointCount - 1)); // 計算寬度，當固定點數時，使用 pointCount 來計算 xStep
-            }
-            else
-            {
-                xStep = (float)(width * xScale / (n - 1)); // 計算寬度，適合動態點數，使用 n 來計算 xStep
-            }
-
-            int startIndex = xOffset > 0 ? (int)(xOffset / xStep) : 0;
-            int endIndex = Math.Min(n - 1, startIndex + (int)Math.Ceiling(width / xStep));
-            int destCount = endIndex - startIndex + 1;
-
-
-            if (destCount <= canShowColumns * 2)
-            {
-                //destCount = Math.Min(destCount, n - startIndex);
-                SKPoint[] sKPoints = new SKPoint[destCount];
-                int[] actualIndexes = new int[destCount];
-
-                for (int i = 0; i < destCount && startIndex + i < n; i++)
-                {
-                    int valueIndex = startIndex + i;
-                    float actualX = valueIndex * xStep - xOffset + left;
-                    float y = getYValue(values[valueIndex]);
-                    sKPoints[i] = new SKPoint(actualX, y);
-                    actualIndexes[i] = valueIndex;
-                }
-                isDownSampling = false;
-                return (sKPoints, actualIndexes);
-            }
-            else
-            {
-                // 採樣顯示，避免過多的點數 (min-max downsampling)
-                int sampleRate = (int)Math.Ceiling((double)destCount / canShowColumns);
-                SKPoint[] sKPoints = new SKPoint[canShowColumns * 2];
-                int[] actualIndexes = new int[canShowColumns * 2];
-                int sKPointIdx = 0;
-                for (int i = 0; i < canShowColumns; i++)
-                {
-                    int cLIdx = Math.Min(startIndex + (i * sampleRate), n - 1);
-                    int cHIdx = Math.Min(cLIdx + sampleRate - 1, n - 1);
-
-                    float cLValue = values[cLIdx];
-                    float cHValue = values[cHIdx];
-
-                    for (int j = cLIdx; j <= cHIdx; j++)
-                    {
-                        if (cLValue > values[j])
-                        {
-                            cLValue = values[j];
-                            cLIdx = j;
-                        }
-
-                        if (cHValue < values[j])
-                        {
-                            cHValue = values[j];
-                            cHIdx = j;
-                        }
-                    }
-
-                    float cLPosX = left + ((cLIdx - startIndex) * xStep);
-                    float cHPosX = left + ((cHIdx - startIndex) * xStep);
-
-                    if (cLIdx < cHIdx)
-                    {
-                        actualIndexes[sKPointIdx] = cLIdx;
-                        sKPoints[sKPointIdx++] = new SKPoint(cLPosX, getYValue(cLValue));
-                        actualIndexes[sKPointIdx] = cHIdx;
-                        sKPoints[sKPointIdx++] = new SKPoint(cHPosX, getYValue(cHValue));
-                    }
-                    else
-                    {
-                        actualIndexes[sKPointIdx] = cHIdx;
-                        sKPoints[sKPointIdx++] = new SKPoint(cHPosX, getYValue(cHValue));
-                        actualIndexes[sKPointIdx] = cLIdx;
-                        sKPoints[sKPointIdx++] = new SKPoint(cLPosX, getYValue(cLValue));
-                    }
-
-                }
-                isDownSampling = true;
-                return (sKPoints, actualIndexes);
-            }
-
-        }
-
         
         private class SkiaDrawWaveformLine : ICustomDrawOperation
         {
@@ -1250,6 +1145,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
     {
         public static ReadOnlySpan<SKPoint> AsSKPoints(this WaveformPoint[] points)
             => MemoryMarshal.Cast<WaveformPoint, SKPoint>(points);
+
+        public static SKRect AsSKRect(this WaveformRect rect)
+            => new SKRect(rect.Left, rect.Top, rect.Right, rect.Bottom);
+        //=> MemoryMarshal.Cast<WaveformRect, SKRect>(MemoryMarshal.CreateReadOnlySpan(ref rect, 1))[0];
     }
 
     internal static class SkiaObjectExtensions

@@ -9,21 +9,51 @@ namespace JC.Waveform.Core
     float YScale = 1f)
     {
         public static WaveformTransform Identity => new();
+
+        public bool Equals(float xOffset, float yOffset, float xScale, float yScale) =>
+            XOffset == xOffset && YOffset == yOffset && XScale == xScale && YScale == yScale;
     }
     [StructLayout(LayoutKind.Sequential)]
     public readonly record struct WaveformPoint(float X, float Y)
     {
         public static WaveformPoint Zero => new(0f, 0f);
     }
-
+    [StructLayout(LayoutKind.Sequential)]
     public readonly record struct WaveformRect(float Left, float Top, float Right, float Bottom)
     {
         public static WaveformRect Zero => new(0f, 0f, 0f, 0f);
+
+        public bool IsEmpty => Left == Right || Top == Bottom;
+
+        public bool Contains(float x, float y) => x >= Left && x <= Right && y >= Top && y <= Bottom;
+
+        public bool Contains(WaveformPoint point) => Contains(point.X, point.Y);
+
+        public bool Equals(float x, float y, float width, float height)
+        {
+            return Left == x && Top == y && Right == (x + width) && Bottom == (y + height);
+        }
+
+        public readonly float Width => Right - Left;
+
+        public readonly float Height => Bottom - Top;
+
+        public readonly float MidX => Left + (Width / 2f);
+
+        public readonly float MidY => Top + (Height / 2f);
+
+        public static WaveformRect Create(float x, float y, float width, float height) =>
+            new(x, y, x + width, y + height);
     }
 
     public readonly record struct ValueRange(float Min, float Max)
     {
+        public static ValueRange Zero => new(0f, 0f);
         public float Span => Max - Min;
+
+        public bool Contains(float value) => value >= Min && value <= Max;
+
+        public bool Equals(float min, float max) => Min == min && Max == max;
     }
 
     public readonly record struct WaveformBuildResult(
