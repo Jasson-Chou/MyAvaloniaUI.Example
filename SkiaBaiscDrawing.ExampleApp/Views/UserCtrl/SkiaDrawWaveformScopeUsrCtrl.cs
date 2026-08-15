@@ -393,6 +393,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private readonly float _drawMaxMinValueTextMargin = 5.0f; // Margin between the max/min value text and the scale line
         private DrawTextInfo? _maxValueDrawText;
         private DrawTextInfo? _minValueDrawText;
+        private DrawTextInfo? _xAxisTitleDrawText;
+        private DrawTextInfo? _yAxisTitleDrawText;
 
 
         private SKRect _drawRect = SKRect.Empty;
@@ -670,6 +672,11 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _minValueDrawText = _minValueDrawText.CompareOrGet(minValueText, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, maxMinTextForeground);
                 _minValueDrawText.Position = new Point(drawGridMaxMinValueScaleLineLeft - _minValueDrawText.Width - _drawMaxMinValueTextMargin, actualMinValueTop - _minValueDrawText.MidHeight);
 
+                _xAxisTitleDrawText = _xAxisTitleDrawText.CompareOrGet("Time(Sec)", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, maxMinTextForeground);
+                _xAxisTitleDrawText.Position = new Point(DrawGridRectLeft + (DrawGridWidth - _xAxisTitleDrawText.Width) * 0.5f, boundHeight - _xAxisTitleDrawText.Height);
+
+                _yAxisTitleDrawText = _yAxisTitleDrawText.CompareOrGet("Voltage", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, maxMinTextForeground);
+                _yAxisTitleDrawText.Position = new Point(DrawGridRectTop + (DrawGridHeight - _yAxisTitleDrawText.Width) * 0.5f, 0);//- _yAxisTitleDrawText.Height * 0.5f);
                 _skiaDrawGrid = new SkiaDrawGrid(_drawRect, _drawScopeGridRect, _waveformBuildRect.AsSKRect(),
                     actualMaxValueTop, actualMinValueTop, DrawGridMaxMinValueScaleLineLength,
                     _skiaGridLinePaint, _skDrawGridVersion);
@@ -682,6 +689,14 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _maxValueDrawText?.Draw(context);
             if (_minValueDrawText is not null && _waveformBuildRect.Bottom >= actualMinValueTop)
                 _minValueDrawText?.Draw(context);
+            if (_xAxisTitleDrawText is not null)
+                _xAxisTitleDrawText?.Draw(context);
+            if (_yAxisTitleDrawText is not null)
+            {
+                var transform = Matrix.CreateRotation(-Math.PI * 0.5) * Matrix.CreateTranslation(0, this.Bounds.Height);
+                using (context.PushTransform(transform))
+                    _yAxisTitleDrawText?.Draw(context);
+            }
         }
 
         private void DrawCursor(DrawingContext context)
