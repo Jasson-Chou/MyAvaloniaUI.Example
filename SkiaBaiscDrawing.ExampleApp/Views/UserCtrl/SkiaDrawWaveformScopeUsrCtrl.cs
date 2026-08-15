@@ -464,27 +464,44 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             InvalidateVisual();
         }
 
+        protected override void OnSizeChanged(SizeChangedEventArgs e)
+        {
+            base.OnSizeChanged(e);
+
+            _skDrawGridVersion++;
+            _skDrawTimeAxisVersion++;
+            _skDrawWaveformLineVersion++;
+            InvalidateVisual();
+        }
+
         private Stopwatch recordSpendTime = new Stopwatch();
         public override void Render(DrawingContext context)
         {
             recordSpendTime.Restart();
             DrawWaveform(context);
-            var drawWaveformTime = recordSpendTime.Elapsed.TotalMilliseconds;
+            var drawWaveformTime = recordSpendTime.Elapsed;
             recordSpendTime.Restart();
             DrawGrid(context);
-            var drawGridTime = recordSpendTime.Elapsed.TotalMilliseconds;
+            var drawGridTime = recordSpendTime.Elapsed;
             recordSpendTime.Restart();
             DrawTimeAxis(context);
-            var drawTimeAxisTime = recordSpendTime.Elapsed.TotalMilliseconds;
+            var drawTimeAxisTime = recordSpendTime.Elapsed;
             recordSpendTime.Restart();
             DrawCursor(context);
-            var drawCursorTime = recordSpendTime.Elapsed.TotalMilliseconds;
+            var drawCursorTime = recordSpendTime.Elapsed;
             recordSpendTime.Restart();
             DrawFpsInfo(context);
-            var drawFpsInfoTime = recordSpendTime.Elapsed.TotalMilliseconds;
+            var drawFpsInfoTime = recordSpendTime.Elapsed;
             recordSpendTime.Stop();
+
             var totalDrawTime = drawWaveformTime + drawGridTime + drawTimeAxisTime + drawCursorTime + drawFpsInfoTime;
-            Debug.WriteLine($"Draw Times - Waveform: {drawWaveformTime} ms, Grid: {drawGridTime} ms, TimeAxis: {drawTimeAxisTime} ms, Cursor: {drawCursorTime} ms, FpsInfo: {drawFpsInfoTime} ms, Total: {totalDrawTime} ms");
+
+            Debug.WriteLine($"{"Item".PadLeft(16)}|{"Time(ms)".PadLeft(14)}|{"Rate".PadLeft(5)}");
+            Debug.WriteLine($"{nameof(DrawWaveform).PadLeft(16)}|{drawWaveformTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawWaveformTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
+            Debug.WriteLine($"{nameof(DrawGrid).PadLeft(16)}|{drawGridTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawGridTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
+            Debug.WriteLine($"{nameof(DrawTimeAxis).PadLeft(16)}|{drawTimeAxisTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawTimeAxisTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
+            Debug.WriteLine($"{nameof(DrawCursor).PadLeft(16)}|{drawCursorTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawCursorTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
+            Debug.WriteLine($"{nameof(DrawFpsInfo).PadLeft(16)}|{drawFpsInfoTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawFpsInfoTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
         }
 
         private void DrawWaveform(DrawingContext context)
@@ -675,8 +692,11 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _xAxisTitleDrawText = _xAxisTitleDrawText.CompareOrGet("Time(Sec)", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, maxMinTextForeground);
                 _xAxisTitleDrawText.Position = new Point(DrawGridRectLeft + (DrawGridWidth - _xAxisTitleDrawText.Width) * 0.5f, boundHeight - _xAxisTitleDrawText.Height);
 
+                var transform = Matrix.CreateRotation(-Math.PI * 0.5) * Matrix.CreateTranslation(0, this.Bounds.Height);
                 _yAxisTitleDrawText = _yAxisTitleDrawText.CompareOrGet("Voltage", CultureInfo.InvariantCulture, FlowDirection.LeftToRight, Typeface.Default, 12, maxMinTextForeground);
-                _yAxisTitleDrawText.Position = new Point(DrawGridRectTop + (DrawGridHeight - _yAxisTitleDrawText.Width) * 0.5f, 0);//- _yAxisTitleDrawText.Height * 0.5f);
+                _yAxisTitleDrawText.Position = new Point(DrawGridRectTop + (DrawGridHeight - _yAxisTitleDrawText.Width) * 0.5f, 0);
+                _yAxisTitleDrawText.Transform = transform;
+
                 _skiaDrawGrid = new SkiaDrawGrid(_drawRect, _drawScopeGridRect, _waveformBuildRect.AsSKRect(),
                     actualMaxValueTop, actualMinValueTop, DrawGridMaxMinValueScaleLineLength,
                     _skiaGridLinePaint, _skDrawGridVersion);
@@ -692,11 +712,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if (_xAxisTitleDrawText is not null)
                 _xAxisTitleDrawText?.Draw(context);
             if (_yAxisTitleDrawText is not null)
-            {
-                var transform = Matrix.CreateRotation(-Math.PI * 0.5) * Matrix.CreateTranslation(0, this.Bounds.Height);
-                using (context.PushTransform(transform))
-                    _yAxisTitleDrawText?.Draw(context);
-            }
+                _yAxisTitleDrawText?.Draw(context);
         }
 
         private void DrawCursor(DrawingContext context)
@@ -1077,6 +1093,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
         public Point Position { get; set; }
 
+        public Matrix Transform { get; set; } = Matrix.Identity;
+
         public bool Equals(string text, CultureInfo cultureInfo, FlowDirection flowDirection, Typeface typeface, double fontSize, IBrush brush)
         {
             return Text == text &&
@@ -1089,7 +1107,17 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
         public void Draw(DrawingContext context)
         {
-            context.DrawText(FormattedText, Position);
+            if( Transform != Matrix.Identity)
+            {
+                using (context.PushTransform(Transform))
+                {
+                    context.DrawText(FormattedText, Position);
+                }
+            }
+            else
+            {
+                context.DrawText(FormattedText, Position);
+            }
         }
 
     }
