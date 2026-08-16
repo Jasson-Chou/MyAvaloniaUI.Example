@@ -151,4 +151,12 @@ namespace JC.Waveform.Core
             return new WaveformBuildResult(waveformPoints, actualIndexes, xStep, isDownSampled);
         }
     }
+
+    public static class WaveformCoreExtensions
+    {
+        public static ReadOnlySpan<T> AsPoints<T>(this WaveformPoint[] pts) where T : struct
+        {
+            return MemoryMarshal.Cast<WaveformPoint, T>(pts);
+        }
+    }
 }

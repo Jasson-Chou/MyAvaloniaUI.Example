@@ -67,6 +67,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IBrush?>(
                 nameof(CursorValueTextBackground), Brushes.Orange);
 
+        public static readonly StyledProperty<IBrush?> CursorLineBrushProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IBrush?>(
+                nameof(CursorLineBrush), Brushes.Red);
+
         public static readonly StyledProperty<float> WaveformLineStrokeWidthProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
                 nameof(WaveformLineStrokeWidth), 1.0f);
@@ -256,6 +260,12 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             set => SetValue(CursorValueTextBackgroundProperty, value);
         }
 
+        public IBrush? CursorLineBrush
+        {
+            get => GetValue(CursorLineBrushProperty);
+            set => SetValue(CursorLineBrushProperty, value);
+        }
+
         public float WaveformLineStrokeWidth
         {
             get => GetValue(WaveformLineStrokeWidthProperty);
@@ -340,6 +350,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 PointCountProperty, 
                 SampleRateProperty, LabelIntervalProperty, TickSpacingScaleProperty, MaxMinTextForegroundProperty,
                 TimeAxisLineColorProperty, GridLineColorProperty, TimeAxisTextColorProperty,
+                CursorLineBrushProperty, CursorValueTextForegroundProperty, CursorValueTextBackgroundProperty,
                 ItemsProperty);
         }
 
@@ -541,7 +552,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     _waveformBuildRect,
                     _waveformBuildValueRange, _waveformBuildTransform, PointCount);
 
-                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(_waveformBuildResult.Points.AsSKPoints(),
+                _skiaDrawWaveformLine = new SkiaDrawWaveformLine(_waveformBuildResult.Points.AsPoints<SKPoint>(),
                     _waveformBuildResult.ActualIndexes, _skiaWaveformLinePen, _waveformBuildRect.AsSKRect(), _skDrawWaveformLineVersion);
 
             }
@@ -715,6 +726,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _yAxisTitleDrawText?.Draw(context);
         }
 
+
+        private Pen _cursorLinePen = null!;
         private void DrawCursor(DrawingContext context)
         {
             if(false == _showCursor)
@@ -737,7 +750,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             }
 
             SKPoint targetPoint = points[index];
-            var cursorPen = new Pen(Brushes.Red, 1.0) { DashStyle = DashStyle.Dash };
+
+            if(_cursorLinePen?.Brush is null || !_cursorLinePen.Brush.Equals(CursorLineBrush))
+                _cursorLinePen = new Pen(CursorLineBrush, 1.0) { DashStyle = DashStyle.Dash };
+
             float midDHTL = _drawCursorHighlightTextMarginLength * 0.5f;
             
             var cursorValueTextForeground = CursorValueTextForeground;
@@ -750,7 +766,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             // Draw vertical line
             if (targetPoint.X >= gridRect.Left && targetPoint.X <= gridRect.Right)
             { 
-                context.DrawLine(cursorPen, new Point(targetPoint.X, gridRect.Top), new Point(targetPoint.X, DrawGridBottom));
+                context.DrawLine(_cursorLinePen, new Point(targetPoint.X, gridRect.Top), new Point(targetPoint.X, DrawGridBottom));
 
                 int actualIndex = _skiaDrawWaveformLine.ActualIndexes[index];
                 DrawTextInfo valueText = null!;
@@ -780,7 +796,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             // Draw horizontal line
             if (targetPoint.Y >= gridRect.Top && targetPoint.Y <= gridRect.Bottom)
             {
-                context.DrawLine(cursorPen, new Point(gridRect.Left, targetPoint.Y), new Point(targetPoint.X, targetPoint.Y));
+                context.DrawLine(_cursorLinePen, new Point(gridRect.Left, targetPoint.Y), new Point(targetPoint.X, targetPoint.Y));
                 var yValueRange = MaxValue - MinValue;
                 var yHeight = gridRect.Height * YScale;
                 var actualYHeight = YOffset + targetPoint.Y - gridRect.Top;
@@ -801,7 +817,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             {
                 // Draw circle at the intersection point
                 var circleRadius = 4.0;
-                context.DrawEllipse(Brushes.Red, cursorPen, new Point(targetPoint.X, targetPoint.Y), circleRadius, circleRadius);
+                context.DrawEllipse(Brushes.Red, _cursorLinePen, new Point(targetPoint.X, targetPoint.Y), circleRadius, circleRadius);
             }
         }
 
@@ -1196,8 +1212,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
     internal static class SkiaWaveformExtensions
     {
-        public static ReadOnlySpan<SKPoint> AsSKPoints(this WaveformPoint[] points)
-            => MemoryMarshal.Cast<WaveformPoint, SKPoint>(points);
 
         public static SKRect AsSKRect(this System.Drawing.RectangleF rect)
             => new SKRect(rect.Left, rect.Top, rect.Right, rect.Bottom);
