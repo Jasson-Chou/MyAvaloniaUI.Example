@@ -27,6 +27,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             _signalRunService = signalRunService;
             _signalGenFactory = signalGenFactory;
             UserSetting = new UserSettingViewModel();
+            WavePlotAppearance = new WavePlotDarkAppearanceViewModel();
             if (Design.IsDesignMode)
             {
                 
@@ -58,6 +59,9 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
 
         [ObservableProperty]
         private UserSettingViewModel _userSetting;
+
+        [ObservableProperty]
+        private WavePlotAppearanceViewModelBase _wavePlotAppearance;
 
         [RelayCommand(CanExecute = nameof(CanRun))]
         private void Run()

@@ -55,9 +55,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, string?>(
                 nameof(YAxisTitle), "Value");
 
-        public static readonly StyledProperty<IBrush?> XYAxisTitleForegroundProperty =
+        public static readonly StyledProperty<IBrush?> AxisTitleForegroundProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IBrush?>(
-                nameof(XYAxisTitleForeground), Brushes.White);
+                nameof(AxisTitleForeground), Brushes.White);
 
         public static readonly StyledProperty<Color> GridLineColorProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, Color>(
@@ -258,10 +258,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             set => SetValue(YAxisTitleProperty, value);
         }
 
-        public IBrush? XYAxisTitleForeground
+        public IBrush? AxisTitleForeground
         {
-            get => GetValue(XYAxisTitleForegroundProperty);
-            set => SetValue(XYAxisTitleForegroundProperty, value);
+            get => GetValue(AxisTitleForegroundProperty);
+            set => SetValue(AxisTitleForegroundProperty, value);
         }
 
         public Color GridLineColor
@@ -389,7 +389,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 XScaleProperty, YScaleProperty, XOffsetProperty, YOffsetProperty,
                 PointCountProperty, 
                 SampleRateProperty, LabelIntervalProperty, TickSpacingScaleProperty, MaxMinTextForegroundProperty,
-                TimeAxisLineColorProperty, GridLineColorProperty, TimeAxisTextColorProperty, XYAxisTitleForegroundProperty, XAxisTitleProperty, YAxisTitleProperty,
+                TimeAxisLineColorProperty, GridLineColorProperty, TimeAxisTextColorProperty, AxisTitleForegroundProperty, XAxisTitleProperty, YAxisTitleProperty,
                 CursorLineBrushProperty, CursorValueTextForegroundProperty, CursorValueTextBackgroundProperty, CursorPointerColorProperty,
                 ItemsProperty);
         }
@@ -544,7 +544,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             DrawFpsInfo(context);
             var drawFpsInfoTime = recordSpendTime.Elapsed;
             recordSpendTime.Stop();
-
+            
             var totalDrawTime = drawWaveformTime + drawGridTime + drawTimeAxisTime + drawCursorTime + drawFpsInfoTime;
 
             Debug.WriteLine($"{"Item".PadLeft(16)}|{"Time(ms)".PadLeft(14)}|{"Rate".PadLeft(5)}");
@@ -727,7 +727,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     maxMinTextForeground = Brushes.White;
                 }
 
-                IBrush? xyAxisTitleForeground = XYAxisTitleForeground;
+                IBrush? xyAxisTitleForeground = AxisTitleForeground;
                 if (xyAxisTitleForeground is null) { xyAxisTitleForeground = Brushes.White; }
 
                 _siScaledValue.SwitchToAuto();
