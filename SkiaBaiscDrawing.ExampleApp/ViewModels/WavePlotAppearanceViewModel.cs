@@ -18,8 +18,8 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             _yAxisTitle = "Amplitude";
             _axisTitleForeground = Brushes.Black;
             _gridLineColor = Colors.LightGray;
-            _timeAxisLineColor = Colors.Gray;
-            _timeAxisTextColor = Colors.Black;
+            _xAxisLineColor = Colors.Gray;
+            _xAxisTextColor = Colors.Black;
             _cursorValueTextForeground = Brushes.White;
             _cursorValueTextBackground = Brushes.Black;
             _cursorLineBrush = Brushes.Blue;
@@ -50,10 +50,10 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         private Color _gridLineColor;
 
         [ObservableProperty]
-        private Color _timeAxisLineColor;
+        private Color _xAxisLineColor;
 
         [ObservableProperty]
-        private Color _timeAxisTextColor;
+        private Color _xAxisTextColor;
 
         [ObservableProperty]
         private IBrush? _cursorValueTextForeground;
@@ -83,12 +83,12 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             Name = "Light Theme";
             WaveformLineColor = Colors.Blue;
             MaxMinTextForeground = Brushes.Black;
-            XAxisTitle = "Time (s)";
-            YAxisTitle = "Amplitude";
+            XAxisTitle = "Time (sec)";
+            YAxisTitle = "Amplitude (volt)";
             AxisTitleForeground = Brushes.Black;
             GridLineColor = Colors.LightGray;
-            TimeAxisLineColor = Colors.Gray;
-            TimeAxisTextColor = Colors.Black;
+            XAxisLineColor = Colors.Gray;
+            XAxisTextColor = Colors.Black;
             CursorValueTextForeground = Brushes.White;
             CursorValueTextBackground = Brushes.Black;
             CursorLineBrush = Brushes.Blue;
@@ -105,12 +105,12 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             Name = "Dark Theme";
             WaveformLineColor = Colors.LimeGreen;
             MaxMinTextForeground = Brushes.White;
-            XAxisTitle = "Time (s)";
-            YAxisTitle = "Amplitude";
+            XAxisTitle = "Time (sec)";
+            YAxisTitle = "Amplitude (volt)";
             AxisTitleForeground = Brushes.White;
             GridLineColor = Colors.DarkGray;
-            TimeAxisLineColor = Colors.Gray;
-            TimeAxisTextColor = Colors.White;
+            XAxisLineColor = Colors.Gray;
+            XAxisTextColor = Colors.White;
             CursorValueTextForeground = Brushes.Black;
             CursorValueTextBackground = Brushes.White;
             CursorLineBrush = Brushes.LimeGreen;

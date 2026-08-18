@@ -39,6 +39,7 @@
         </Style>
 
     </Window.Styles>
+    
     <Grid RowDefinitions="*, auto, auto" ColumnDefinitions="*, auto, auto">
         
         <usrCtrl:SkiaDrawWaveformScopeUsrCtrl x:Name="DrawLineControl" 
@@ -59,105 +60,132 @@
                                               YAxisTitle="{Binding WavePlotAppearance.YAxisTitle}"
                                               AxisTitleForeground="{Binding WavePlotAppearance.AxisTitleForeground}"
                                               GridLineColor="{Binding WavePlotAppearance.GridLineColor}"
-                                              TimeAxisLineColor="{Binding WavePlotAppearance.TimeAxisLineColor}"
+                                              XAxisLineColor="{Binding WavePlotAppearance.XAxisLineColor}"
+                                              XAxisTextColor="{Binding WavePlotAppearance.XAxisTextColor}"
                                               CursorValueTextForeground="{Binding WavePlotAppearance.CursorValueTextForeground}"
                                               CursorValueTextBackground="{Binding WavePlotAppearance.CursorValueTextBackground}"
                                               CursorLineBrush="{Binding WavePlotAppearance.CursorLineBrush}"
                                               CursorPointerColor="{Binding WavePlotAppearance.CursorPointerColor}"
                                               WaveformLineStrokeWidth="{Binding WavePlotAppearance.WaveformLineStrokeWidth}"
-                                              
+                                              WavePlotBackground="{Binding WavePlotAppearance.Background}"
                                               />
 
         <ScrollBar x:Name="xOffsetScrollBar" Grid.Row="1" Orientation="Horizontal" Minimum="0.0" Maximum="{Binding #DrawLineControl.MaxXOffset}" Value="0.0" />
         <ScrollBar x:Name="yOffsetScrollBar" Grid.Column="1" Orientation="Vertical" Minimum="0.0" Maximum="{Binding #DrawLineControl.MaxYOffset}" Value="0.0" />
         
+        <TabControl Grid.Row="0" Grid.Column="2" Grid.RowSpan="2">
+            <TabItem Header="Control">
+                <Grid ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto,*">
+                    <Grid.Styles>
+                        <Style Selector="TextBlock.align">
+                            <Setter Property="Grid.Column" Value="0"/>
+                        </Style>
+                    </Grid.Styles>
 
-        <Grid Grid.Row="0" Grid.Column="2" Grid.RowSpan="2"
-              ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto,*">
-            <Grid.Styles>
-                <Style Selector="TextBlock.align">
-                    <Setter Property="Grid.Column" Value="0"/>
-                </Style>
-            </Grid.Styles>
+                    <TextBlock Text="X Scale:" Grid.Row="0" Classes="primary align"/>
+                    <StackPanel                Grid.Row="0" Grid.Column="2" Orientation="Horizontal">
+                        <Slider x:Name="xScaleSlider" Width="160" Minimum="1.0" Maximum="100" Value="1.0" />
+                        <NumericUpDown Value="{Binding #xScaleSlider.Value}" Classes="primary" FormatString="F2"/>
+                    </StackPanel>
 
-            <TextBlock Text="X Scale:" Grid.Row="0" Classes="primary align"/>
-            <StackPanel                Grid.Row="0" Grid.Column="2" Orientation="Horizontal">
-                <Slider x:Name="xScaleSlider" Width="160" Minimum="1.0" Maximum="100" Value="1.0" />
-                <NumericUpDown Value="{Binding #xScaleSlider.Value}" Classes="primary" FormatString="F2"/>
-            </StackPanel>
+                    <TextBlock Text="Y Scale:" Grid.Row="1" Classes="primary align"/>
+                    <StackPanel                Grid.Row="1" Grid.Column="2" Orientation="Horizontal">
+                        <Slider x:Name="yScaleSlider" Width="160" Minimum="1.0" Maximum="100" Value="1.0" />
+                        <NumericUpDown Value="{Binding #yScaleSlider.Value}" Classes="primary" FormatString="F2"/>
+                    </StackPanel>
 
-            <TextBlock Text="Y Scale:" Grid.Row="1" Classes="primary align"/>
-            <StackPanel                Grid.Row="1" Grid.Column="2" Orientation="Horizontal">
-                <Slider x:Name="yScaleSlider" Width="160" Minimum="1.0" Maximum="100" Value="1.0" />
-                <NumericUpDown Value="{Binding #yScaleSlider.Value}" Classes="primary" FormatString="F2"/>
-            </StackPanel>
+                    <TextBlock Text="Tick Spacing Scale:" Grid.Row="2" Classes="primary align"/>
+                    <StackPanel                Grid.Row="2" Grid.Column="2" Orientation="Horizontal">
+                        <Slider x:Name="tickSpacingScaleSlider" Width="160" Minimum="0.0" Maximum="1.0" Value="0.1" />
+                        <NumericUpDown Value="{Binding #tickSpacingScaleSlider.Value}" Classes="primary" FormatString="F3"/>
+                    </StackPanel>
 
-            <TextBlock Text="Tick Spacing Scale:" Grid.Row="2" Classes="primary align"/>
-            <StackPanel                Grid.Row="2" Grid.Column="2" Orientation="Horizontal">
-                <Slider x:Name="tickSpacingScaleSlider" Width="160" Minimum="0.0" Maximum="1.0" Value="0.1" />
-                <NumericUpDown Value="{Binding #tickSpacingScaleSlider.Value}" Classes="primary" FormatString="F3"/>
-            </StackPanel>
+                    <TextBlock Text="FPS:" Grid.Row="3" Classes="primary align"/>
+                    <NumericUpDown x:Name="fpsNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="3" Grid.Column="2" Minimum="1" Maximum="144" Value="{Binding UserSetting.Fps}" Classes="primary" FormatString="F0"/>
 
-            <TextBlock Text="FPS:" Grid.Row="3" Classes="primary align"/>
-            <NumericUpDown x:Name="fpsNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="3" Grid.Column="2" Minimum="1" Maximum="144" Value="{Binding UserSetting.Fps}" Classes="primary" FormatString="F0"/>
+                    <TextBlock Text="Points:" Grid.Row="4" Classes="primary align"/>
+                    <NumericUpDown x:Name="pointsNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="4" Grid.Column="2" Minimum="0" Maximum="1000000" Value="{Binding UserSetting.PointCount}" 
+                                   ParsingNumberStyle="Integer"
+                                   Classes="primary"/>
+            
+                    <TextBlock Text="Freq:" Grid.Row="5" Classes="primary align"/>
+                    <NumericUpDown x:Name="freqNumericUpDown" HorizontalAlignment="Stretch" 
+                                   Grid.Row="5" Grid.Column="2" Minimum="1" Maximum="1000000" Value="{Binding UserSetting.Frequency}" 
+                                   InnerRightContent="Hz "
+                                   Classes="primary"/>
+            
+                    <TextBlock Text="Fs:" Grid.Row="6" Classes="primary align"/>
+                    <NumericUpDown x:Name="fsNumericUpDown" HorizontalAlignment="Stretch" 
+                                   Grid.Row="6" Grid.Column="2" Minimum="1" Maximum="1000000" Value="{Binding UserSetting.SampleRate}" 
+                                   InnerRightContent="Hz "
+                                   Classes="primary"/>
 
-            <TextBlock Text="Points:" Grid.Row="4" Classes="primary align"/>
-            <NumericUpDown x:Name="pointsNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="4" Grid.Column="2" Minimum="0" Maximum="1000000" Value="{Binding UserSetting.PointCount}" 
-                           ParsingNumberStyle="Integer"
-                           Classes="primary"/>
+                    <TextBlock Text="Phase:" Grid.Row="7" Classes="primary align"/>
+                    <NumericUpDown x:Name="phaseNumericUpDown" HorizontalAlignment="Stretch" 
+                                   Grid.Row="7" Grid.Column="2" Minimum="-180" Maximum="180" Value="{Binding UserSetting.PhaseDegree}" 
+                                   InnerRightContent="degree" FormatString="0.##"
+                                   Classes="primary"/>
             
-            <TextBlock Text="Freq:" Grid.Row="5" Classes="primary align"/>
-            <NumericUpDown x:Name="freqNumericUpDown" HorizontalAlignment="Stretch" 
-                           Grid.Row="5" Grid.Column="2" Minimum="1" Maximum="1000000" Value="{Binding UserSetting.Frequency}" 
-                           InnerRightContent="Hz "
-                           Classes="primary"/>
+                    <TextBlock Text="Amplitude:" Grid.Row="8" Classes="primary align"/>
+                    <NumericUpDown x:Name="amplitudeNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="8" Grid.Column="2" Value="{Binding UserSetting.Amplitude}" 
+                                   InnerRightContent="V "
+                                   Classes="primary"/>
             
-            <TextBlock Text="Fs:" Grid.Row="6" Classes="primary align"/>
-            <NumericUpDown x:Name="fsNumericUpDown" HorizontalAlignment="Stretch" 
-                           Grid.Row="6" Grid.Column="2" Minimum="1" Maximum="1000000" Value="{Binding UserSetting.SampleRate}" 
-                           InnerRightContent="Hz "
-                           Classes="primary"/>
-
-            <TextBlock Text="Phase:" Grid.Row="7" Classes="primary align"/>
-            <NumericUpDown x:Name="phaseNumericUpDown" HorizontalAlignment="Stretch" 
-                           Grid.Row="7" Grid.Column="2" Minimum="-180" Maximum="180" Value="{Binding UserSetting.PhaseDegree}" 
-                           InnerRightContent="degree" FormatString="0.##"
-                           Classes="primary"/>
+                    <TextBlock Text="Auto Max/Min Scale:" Grid.Row="9" Classes="primary align"/>
+                    <CheckBox x:Name="autoScaleCheckBox" HorizontalAlignment="Center" Grid.Row="9" Grid.Column="2" IsChecked="{Binding UserSetting.AutoScale}" Classes="primary"/>
             
-            <TextBlock Text="Amplitude:" Grid.Row="8" Classes="primary align"/>
-            <NumericUpDown x:Name="amplitudeNumericUpDown" HorizontalAlignment="Stretch" Grid.Row="8" Grid.Column="2" Value="{Binding UserSetting.Amplitude}" 
-                           InnerRightContent="V "
-                           Classes="primary"/>
+                    <TextBlock Text="Max Value:" Grid.Row="10" Classes="primary align"/>
+                    <NumericUpDown x:Name="maxValueNumericUpDown" HorizontalAlignment="Stretch" 
+                                   IsEnabled="{Binding !#autoScaleCheckBox.IsChecked}"
+                                   Grid.Row="10" Grid.Column="2" Value="{Binding UserSetting.MaxValue}" InnerRightContent="V " Classes="primary"/>
             
-            <TextBlock Text="Auto Max/Min Scale:" Grid.Row="9" Classes="primary align"/>
-            <CheckBox x:Name="autoScaleCheckBox" HorizontalAlignment="Center" Grid.Row="9" Grid.Column="2" IsChecked="{Binding UserSetting.AutoScale}" Classes="primary"/>
-            
-            <TextBlock Text="Max Value:" Grid.Row="10" Classes="primary align"/>
-            <NumericUpDown x:Name="maxValueNumericUpDown" HorizontalAlignment="Stretch" 
-                           IsEnabled="{Binding !#autoScaleCheckBox.IsChecked}"
-                           Grid.Row="10" Grid.Column="2" Value="{Binding UserSetting.MaxValue}" InnerRightContent="V " Classes="primary"/>
-            
-            <TextBlock Text="Min Value:" Grid.Row="11" Classes="primary align"/>
-            <NumericUpDown x:Name="minValueNumericUpDown" HorizontalAlignment="Stretch" 
-                           IsEnabled="{Binding !#autoScaleCheckBox.IsChecked}"
-                           Grid.Row="11" Grid.Column="2" Value="{Binding UserSetting.MinValue}" InnerRightContent="V " Classes="primary"/>
+                    <TextBlock Text="Min Value:" Grid.Row="11" Classes="primary align"/>
+                    <NumericUpDown x:Name="minValueNumericUpDown" HorizontalAlignment="Stretch" 
+                                   IsEnabled="{Binding !#autoScaleCheckBox.IsChecked}"
+                                   Grid.Row="11" Grid.Column="2" Value="{Binding UserSetting.MinValue}" InnerRightContent="V " Classes="primary"/>
             
 
-            <StackPanel                Grid.Row="12" Grid.Column="2" Orientation="Horizontal" Margin="0 5" HorizontalAlignment="Right">
-                <!--<Button x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary"/>-->
-                <SplitButton x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary">
-                    <SplitButton.Flyout>
-                        <MenuFlyout Placement="Bottom">
-                            <MenuItem Header="Run Once" Command="{Binding GenerateWaveformCommand}"/>
-                            <MenuItem Header="Clear" Command="{Binding ClearItemsCommand}"/>
-                        </MenuFlyout>
-                    </SplitButton.Flyout>
-                </SplitButton>
-                <Button x:Name="stopButton" Content="Stop" Width="100" HorizontalContentAlignment="Center" Command="{Binding StopCommand}" Classes="primary"/>
-            </StackPanel>
-            <TextBlock Text="{Binding CumulativePoints, StringFormat=Cumulative:{0}}" Grid.Row="13" Grid.Column="2" HorizontalAlignment="Left" Classes="primary"/>
+                    <StackPanel                Grid.Row="12" Grid.Column="2" Orientation="Horizontal" Margin="0 5" HorizontalAlignment="Right">
+                        <!--<Button x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary"/>-->
+                        <SplitButton x:Name="runButton" Content="Run" Width="100" HorizontalContentAlignment="Center" Command="{Binding RunCommand}" Classes="primary">
+                            <SplitButton.Flyout>
+                                <MenuFlyout Placement="Bottom">
+                                    <MenuItem Header="Run Once" Command="{Binding GenerateWaveformCommand}"/>
+                                    <MenuItem Header="Clear" Command="{Binding ClearItemsCommand}"/>
+                                </MenuFlyout>
+                            </SplitButton.Flyout>
+                        </SplitButton>
+                        <Button x:Name="stopButton" Content="Stop" Width="100" HorizontalContentAlignment="Center" Command="{Binding StopCommand}" Classes="primary"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding CumulativePoints, StringFormat=Cumulative:{0}}" Grid.Row="13" Grid.Column="2" HorizontalAlignment="Left" Classes="primary"/>
             
-        </Grid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Appearance">
+                <Grid ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, *">
+                    <TextBlock Grid.Row="0" Text="Background"/>
+                    <ColorPicker Grid.Row="0" Grid.Column="1"
+                                 IsAlphaEnabled="True"
+                        IsColorSpectrumVisible="True"
+                        IsColorPaletteVisible="True"
+                        IsColorComponentsVisible="True"
+                        IsColorPreviewVisible="True"
+                        IsColorModelVisible="True" 
+                        Color="{Binding WavePlotAppearance.Background, Mode=TwoWay, Converter={StaticResource ColorToBrushConverter}}"/>
+                    
+                    <TextBlock Grid.Row="1" Text="Waveform Line Color"/>
+                    <ColorPicker Grid.Row="1" Grid.Column="1"
+                                 IsAlphaEnabled="True"
+                        IsColorSpectrumVisible="True"
+                        IsColorPaletteVisible="True"
+                        IsColorComponentsVisible="True"
+                        IsColorPreviewVisible="True"
+                        IsColorModelVisible="True" 
+                        Color="{Binding WavePlotAppearance.WaveformLineColor}"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        
         
     </Grid>
 

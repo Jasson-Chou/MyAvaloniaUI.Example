@@ -63,13 +63,13 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, Color>(
                 nameof(GridLineColor), Colors.White);
 
-        public static readonly StyledProperty<Color> TimeAxisLineColorProperty =
+        public static readonly StyledProperty<Color> XAxisLineColorProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, Color>(
-                nameof(TimeAxisLineColor), Colors.Red);
+                nameof(XAxisLineColor), Colors.Red);
 
-        public static readonly StyledProperty<Color> TimeAxisTextColorProperty =
+        public static readonly StyledProperty<Color> XAxisTextColorProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, Color>(
-                nameof(TimeAxisTextColor), Colors.Red);
+                nameof(XAxisTextColor), Colors.Red);
 
         public static readonly StyledProperty<IBrush?> CursorValueTextForegroundProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IBrush?>(
@@ -86,6 +86,10 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         public static readonly StyledProperty<IBrush?> CursorPointerColorProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IBrush?>(
                 nameof(CursorPointerColor), Brushes.Red);
+
+        public static readonly StyledProperty<IBrush?> WavePlotBackgroundProperty =
+            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IBrush?>(
+                nameof(WavePlotBackground), Brushes.Black);
 
         public static readonly StyledProperty<float> WaveformLineStrokeWidthProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
@@ -270,16 +274,16 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             set => SetValue(GridLineColorProperty, value);
         }
 
-        public Color TimeAxisLineColor
+        public Color XAxisLineColor
         {
-            get => GetValue(TimeAxisLineColorProperty);
-            set => SetValue(TimeAxisLineColorProperty, value);
+            get => GetValue(XAxisLineColorProperty);
+            set => SetValue(XAxisLineColorProperty, value);
         }
 
-        public Color TimeAxisTextColor
+        public Color XAxisTextColor
         {
-            get => GetValue(TimeAxisTextColorProperty);
-            set => SetValue(TimeAxisTextColorProperty, value);
+            get => GetValue(XAxisTextColorProperty);
+            set => SetValue(XAxisTextColorProperty, value);
         }
 
         public IBrush? CursorValueTextForeground
@@ -304,6 +308,12 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         {
             get => GetValue(CursorPointerColorProperty);
             set => SetValue(CursorPointerColorProperty, value);
+        }
+
+        public IBrush? WavePlotBackground
+        {
+            get => GetValue(WavePlotBackgroundProperty);
+            set => SetValue(WavePlotBackgroundProperty, value);
         }
 
         public float WaveformLineStrokeWidth
@@ -389,8 +399,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 XScaleProperty, YScaleProperty, XOffsetProperty, YOffsetProperty,
                 PointCountProperty, 
                 SampleRateProperty, LabelIntervalProperty, TickSpacingScaleProperty, MaxMinTextForegroundProperty,
-                TimeAxisLineColorProperty, GridLineColorProperty, TimeAxisTextColorProperty, AxisTitleForegroundProperty, XAxisTitleProperty, YAxisTitleProperty,
-                CursorLineBrushProperty, CursorValueTextForegroundProperty, CursorValueTextBackgroundProperty, CursorPointerColorProperty,
+                XAxisLineColorProperty, GridLineColorProperty, XAxisTextColorProperty, AxisTitleForegroundProperty, XAxisTitleProperty, YAxisTitleProperty,
+                CursorLineBrushProperty, CursorValueTextForegroundProperty, CursorValueTextBackgroundProperty, CursorPointerColorProperty, WavePlotBackgroundProperty,
                 ItemsProperty);
         }
 
@@ -529,6 +539,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         public override void Render(DrawingContext context)
         {
             recordSpendTime.Restart();
+            DrawBackground(context);
+            var drawBackgroundTime = recordSpendTime.Elapsed;
+            recordSpendTime.Restart();
             DrawWaveform(context);
             var drawWaveformTime = recordSpendTime.Elapsed;
             recordSpendTime.Restart();
@@ -545,14 +558,23 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             var drawFpsInfoTime = recordSpendTime.Elapsed;
             recordSpendTime.Stop();
             
-            var totalDrawTime = drawWaveformTime + drawGridTime + drawTimeAxisTime + drawCursorTime + drawFpsInfoTime;
+            var totalDrawTime = drawBackgroundTime + drawWaveformTime + drawGridTime + drawTimeAxisTime + drawCursorTime + drawFpsInfoTime;
 
             Debug.WriteLine($"{"Item".PadLeft(16)}|{"Time(ms)".PadLeft(14)}|{"Rate".PadLeft(5)}");
+            Debug.WriteLine($"{nameof(DrawBackground).PadLeft(16)}|{drawBackgroundTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawBackgroundTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
             Debug.WriteLine($"{nameof(DrawWaveform).PadLeft(16)}|{drawWaveformTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawWaveformTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
             Debug.WriteLine($"{nameof(DrawGrid).PadLeft(16)}|{drawGridTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawGridTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
             Debug.WriteLine($"{nameof(DrawTimeAxis).PadLeft(16)}|{drawTimeAxisTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawTimeAxisTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
             Debug.WriteLine($"{nameof(DrawCursor).PadLeft(16)}|{drawCursorTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawCursorTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
             Debug.WriteLine($"{nameof(DrawFpsInfo).PadLeft(16)}|{drawFpsInfoTime.TotalMilliseconds.ToString().PadLeft(14)}|{(drawFpsInfoTime.TotalMilliseconds / totalDrawTime.TotalMilliseconds).ToString("F2").PadLeft(5)}");
+        }
+
+        private Rect _backgroundRect;
+        private void DrawBackground(DrawingContext context)
+        {
+            if(_backgroundRect.Width != this.Bounds.Width || _backgroundRect.Height != this.Bounds.Height)
+                _backgroundRect = new Rect(0, 0, this.Bounds.Width, this.Bounds.Height);
+            context.DrawRectangle(WavePlotBackground, null, _backgroundRect);
         }
 
         private void DrawWaveform(DrawingContext context)
@@ -629,9 +651,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     List<TimeTextTick> timeTextTicks = new List<TimeTextTick>();
                     List<SKPoint> tickPointsList = new List<SKPoint>();
 
-                    _skiaTimeAxisLinePaint = _skiaTimeAxisLinePaint.CompareOrGet(TimeAxisLineColor, 1.0f);
+                    _skiaTimeAxisLinePaint = _skiaTimeAxisLinePaint.CompareOrGet(XAxisLineColor, 1.0f);
                     _timeAxisTickFont = _timeAxisTickFont.CompareOrGet(SKTypeface.Default, 12, scaleX: 1.0f);
-                    _timeAxisTextPaint = _timeAxisTextPaint.CompareOrGet(TimeAxisTextColor, 1.0f, SKPaintStyle.Fill);
+                    _timeAxisTextPaint = _timeAxisTextPaint.CompareOrGet(XAxisTextColor, 1.0f, SKPaintStyle.Fill);
 
                     float firstPointX = _skiaDrawWaveformLine.Points.First().X;
                     float lastPointX = _skiaDrawWaveformLine.Points.Last().X;
@@ -964,7 +986,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 canvas.Save();
                 canvas.ClipRect(_bounds);
 
-                if(_sKiaPen is not null)
+                if (_sKiaPen is not null && false == _sKiaPen.IsDisposed)
                     canvas.DrawPoints(SKPointMode.Polygon, _points, _sKiaPen.SKiaPaint);
 
                 canvas.Restore();
@@ -1211,6 +1233,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         {
             return _color.Equals(color) && _strokeWidth.Equals(strokeWidth) && _sKPaintStyle == sKPaintStyle;
         }
+
+        public bool IsDisposed => isDisposed;
 
         public void Dispose()
         {
