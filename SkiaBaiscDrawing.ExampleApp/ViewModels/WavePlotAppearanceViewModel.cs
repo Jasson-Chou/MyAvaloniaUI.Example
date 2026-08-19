@@ -25,7 +25,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             _cursorLineBrush = Brushes.Blue;
             _cursorPointerColor = Brushes.Red;
             _waveformLineStrokeWidth = 2.0f;
-            _background = Brushes.White;
+            _background = new SolidColorBrush(Colors.White);
         }
 
         [ObservableProperty]
@@ -82,19 +82,19 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         {
             Name = "Light Theme";
             WaveformLineColor = Colors.Blue;
-            MaxMinTextForeground = Brushes.Black;
+            MaxMinTextForeground = new SolidColorBrush(Colors.Black);
             XAxisTitle = "Time (sec)";
             YAxisTitle = "Amplitude (volt)";
-            AxisTitleForeground = Brushes.Black;
+            AxisTitleForeground =new SolidColorBrush(Colors.Black);
             GridLineColor = Colors.LightGray;
             XAxisLineColor = Colors.Gray;
             XAxisTextColor = Colors.Black;
-            CursorValueTextForeground = Brushes.White;
-            CursorValueTextBackground = Brushes.Black;
-            CursorLineBrush = Brushes.Blue;
-            CursorPointerColor = Brushes.Red;
+            CursorValueTextForeground = new SolidColorBrush(Colors.White);
+            CursorValueTextBackground = new SolidColorBrush(Colors.Black);
+            CursorLineBrush = new SolidColorBrush(Colors.Blue);
+            CursorPointerColor = new SolidColorBrush(Colors.Red);
             WaveformLineStrokeWidth = 2.0f;
-            Background = Brushes.White;
+            Background = new SolidColorBrush(Colors.White);
         }
     }
 
@@ -104,19 +104,19 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         {
             Name = "Dark Theme";
             WaveformLineColor = Colors.LimeGreen;
-            MaxMinTextForeground = Brushes.White;
+            MaxMinTextForeground = new SolidColorBrush(Colors.White);
             XAxisTitle = "Time (sec)";
             YAxisTitle = "Amplitude (volt)";
-            AxisTitleForeground = Brushes.White;
+            AxisTitleForeground = new SolidColorBrush(Colors.White);
             GridLineColor = Colors.DarkGray;
             XAxisLineColor = Colors.Gray;
             XAxisTextColor = Colors.White;
-            CursorValueTextForeground = Brushes.Black;
-            CursorValueTextBackground = Brushes.White;
-            CursorLineBrush = Brushes.LimeGreen;
-            CursorPointerColor = Brushes.Red;
+            CursorValueTextForeground = new SolidColorBrush(Colors.Black);
+            CursorValueTextBackground = new SolidColorBrush(Colors.White);
+            CursorLineBrush = new SolidColorBrush(Colors.LimeGreen);
+            CursorPointerColor = new SolidColorBrush(Colors.Red);
             WaveformLineStrokeWidth = 2.0f;
-            Background = Brushes.Black;
+            Background = new SolidColorBrush(Colors.Black);
         }
     }
 }

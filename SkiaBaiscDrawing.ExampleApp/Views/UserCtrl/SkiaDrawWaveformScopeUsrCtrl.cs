@@ -89,7 +89,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
         public static readonly StyledProperty<IBrush?> WavePlotBackgroundProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, IBrush?>(
-                nameof(WavePlotBackground), Brushes.Black);
+                nameof(WavePlotBackground), Brushes.White);
 
         public static readonly StyledProperty<float> WaveformLineStrokeWidthProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, float>(
@@ -155,7 +155,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             if (change.Property != SampleRateProperty && change.Property != LabelIntervalProperty && change.Property != TickSpacingScaleProperty)
                 _skDrawWaveformLineVersion++;
 
-            if (change.Property == XOffsetProperty || change.Property == XScaleProperty || change.Property == TickSpacingScaleProperty)
+            if (change.Property == XOffsetProperty || change.Property == XScaleProperty || change.Property == TickSpacingScaleProperty || change.Property == XAxisLineColorProperty ||
+                change.Property == XAxisTextColorProperty)
                 _skDrawTimeAxisVersion++;
 
             if (change.Property == YScaleProperty || change.Property == YOffsetProperty || change.Property == MaxValueProperty || 
@@ -592,7 +593,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
             if (_skiaDrawWaveformLine is null || _skiaDrawWaveformLine.Version != _skDrawWaveformLineVersion)
             {
-                _skiaWaveformLinePen = _skiaWaveformLinePen.CompareOrGet(WaveformLineColor, WaveformLineStrokeWidth);
+                
 
                 if (_waveformBuildRect.IsEmpty || false == _waveformBuildRect.Equals(DrawWaveformLineLeft, DrawWaveformLineTop, DrawWaveformWidth, DrawWaveformHeight))
                 {
@@ -613,6 +614,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                     _waveformBuildRect,
                     _waveformBuildValueRange, _waveformBuildTransform, PointCount);
 
+                _skiaWaveformLinePen = _skiaWaveformLinePen.CompareOrGet(WaveformLineColor, WaveformLineStrokeWidth);
                 _skiaDrawWaveformLine = new SkiaDrawWaveformLine(_waveformBuildResult.Points.AsPoints<SKPoint>(),
                     _waveformBuildResult.ActualIndexes, _skiaWaveformLinePen, _waveformBuildRect.AsSKRect(), _skDrawWaveformLineVersion);
 
@@ -700,6 +702,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                         }
                     }
 
+                   
                     _skiaDrawTimeAxis = new SkiaDrawTimeAxis(
                         new SKRect(DrawGridRectLeft, tickTop, DrawGridRectLeft + DrawGridWidth, (float)this.Bounds.Bottom),
                         tickPointsList.ToArray(), _skiaTimeAxisLinePaint, 
@@ -1049,11 +1052,11 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 canvas.Save();
                 canvas.ClipRect(_bounds);
 
-                if (_sKiaLinePaint is not null)
+                if (_sKiaLinePaint is not null && false == _sKiaLinePaint.IsDisposed)
                 {
                     canvas.DrawPoints(SKPointMode.Lines, _tickPoints, _sKiaLinePaint.SKiaPaint);
                 }
-                if (_sKiaTextPaint is not null && _sKiaTextFont is not null)
+                if (_sKiaTextPaint is not null && false == _sKiaTextPaint.IsDisposed && _sKiaTextFont is not null && false == _sKiaTextFont.IsDisposed)
                 {
                     foreach (var timeTextTick in _timeTextTicks)
                     {
@@ -1119,7 +1122,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 canvas.Save();
                 canvas.ClipRect(_bounds);
 
-                if(_sKiaPen is not null)
+                if(_sKiaPen is not null && false == _sKiaPen.IsDisposed)
                 {
                     canvas.DrawLine(_drawGridRect.Left, _drawGridRect.Top, _drawGridRect.Left, _drawGridRect.Bottom, _sKiaPen.SKiaPaint);
                     canvas.DrawLine(_drawGridRect.Left, _drawGridRect.Bottom,_drawGridRect.Right, _drawGridRect.Bottom, _sKiaPen.SKiaPaint);
@@ -1267,6 +1270,9 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         {
             return _typeface.Equals(typeface) && _fontSize.Equals(fontSize) && _scaleX.Equals(scaleX) && _skewX.Equals(skewX);
         }
+
+        public bool IsDisposed => isDisposed;
+
         public void Dispose()
         {
             if (!isDisposed)

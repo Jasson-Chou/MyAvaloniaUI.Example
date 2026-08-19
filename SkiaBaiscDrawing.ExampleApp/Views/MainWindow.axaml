@@ -38,6 +38,16 @@
             <Setter Property="Margin" Value="2 1.5"/>
         </Style>
 
+        <Style Selector="ColorPicker.primary">
+            <Setter Property="Margin" Value="2 1.5"/>
+            <Setter Property="IsAlphaEnabled" Value="True"/>
+            <Setter Property="IsColorSpectrumVisible" Value="True"/>
+            <Setter Property="IsColorPaletteVisible" Value="True"/>
+            <Setter Property="IsColorComponentsVisible" Value="True"/>
+            <Setter Property="IsColorPreviewVisible" Value="True"/>
+            <Setter Property="IsColorModelVisible" Value="True"/>
+        </Style>
+
     </Window.Styles>
     
     <Grid RowDefinitions="*, auto, auto" ColumnDefinitions="*, auto, auto">
@@ -163,25 +173,49 @@
             </TabItem>
             <TabItem Header="Appearance">
                 <Grid ColumnDefinitions="auto, auto" RowDefinitions="auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto, *">
-                    <TextBlock Grid.Row="0" Text="Background"/>
-                    <ColorPicker Grid.Row="0" Grid.Column="1"
-                                 IsAlphaEnabled="True"
-                        IsColorSpectrumVisible="True"
-                        IsColorPaletteVisible="True"
-                        IsColorComponentsVisible="True"
-                        IsColorPreviewVisible="True"
-                        IsColorModelVisible="True" 
-                        Color="{Binding WavePlotAppearance.Background, Mode=TwoWay, Converter={StaticResource ColorToBrushConverter}}"/>
+                    <TextBlock Grid.Row="0" Text="Background" Classes="primary"/>
+                    <ColorPicker Grid.Row="0" Grid.Column="1" Classes="primary"
+                        Color="{Binding WavePlotAppearance.Background, Converter={StaticResource BrushToColorConverter}}"/>
                     
-                    <TextBlock Grid.Row="1" Text="Waveform Line Color"/>
-                    <ColorPicker Grid.Row="1" Grid.Column="1"
-                                 IsAlphaEnabled="True"
-                        IsColorSpectrumVisible="True"
-                        IsColorPaletteVisible="True"
-                        IsColorComponentsVisible="True"
-                        IsColorPreviewVisible="True"
-                        IsColorModelVisible="True" 
+                    <TextBlock Grid.Row="1" Text="Waveform Line Color" Classes="primary"/>
+                    <ColorPicker Grid.Row="1" Grid.Column="1" Classes="primary"
                         Color="{Binding WavePlotAppearance.WaveformLineColor}"/>
+
+                    <TextBlock Grid.Row="2" Text="Max Min Foreground" Classes="primary"/>
+                    <ColorPicker Grid.Row="2" Grid.Column="1" Classes="primary"
+                        Color="{Binding WavePlotAppearance.MaxMinTextForeground, Converter={StaticResource BrushToColorConverter}}"/>
+
+                    <TextBlock Grid.Row="3" Text="Axis Title Foreground" Classes="primary"/>
+                    <ColorPicker Grid.Row="3" Grid.Column="1" Classes="primary"
+                        Color="{Binding WavePlotAppearance.AxisTitleForeground, Converter={StaticResource BrushToColorConverter}}"/>
+
+                    <TextBlock Grid.Row="4" Text="Grid Line Color" Classes="primary"/>
+                    <ColorPicker Grid.Row="4" Grid.Column="1" Classes="primary"
+                        Color="{Binding WavePlotAppearance.GridLineColor}"/>
+
+                    <TextBlock Grid.Row="5" Text="XAxis Line Color" Classes="primary"/>
+                    <ColorPicker Grid.Row="5" Grid.Column="1" Classes="primary"
+                        Color="{Binding WavePlotAppearance.XAxisLineColor}"/>
+
+                    <TextBlock Grid.Row="6" Text="XAxis Text Color" Classes="primary"/>
+                    <ColorPicker Grid.Row="6" Grid.Column="1" Classes="primary"
+                        Color="{Binding WavePlotAppearance.XAxisTextColor}"/>
+
+                    <TextBlock Grid.Row="7" Text="Cursor Value Text Foreground" Classes="primary"/>
+                    <ColorPicker Grid.Row="7" Grid.Column="1" Classes="primary"
+                        Color="{Binding WavePlotAppearance.CursorValueTextForeground, Converter={StaticResource BrushToColorConverter}}"/>
+
+                    <TextBlock Grid.Row="8" Text="Cursor Value Text Background" Classes="primary"/>
+                    <ColorPicker Grid.Row="8" Grid.Column="1" Classes="primary"
+                        Color="{Binding WavePlotAppearance.CursorValueTextBackground, Converter={StaticResource BrushToColorConverter}}"/>
+
+                    <TextBlock Grid.Row="9" Text="Cursor Line Brush" Classes="primary"/>
+                    <ColorPicker Grid.Row="9" Grid.Column="1" Classes="primary"
+                        Color="{Binding WavePlotAppearance.CursorLineBrush, Converter={StaticResource BrushToColorConverter}}"/>
+
+                    <TextBlock Grid.Row="10" Text="Cursor Pointer Color" Classes="primary"/>
+                    <ColorPicker Grid.Row="10" Grid.Column="1" Classes="primary"
+                        Color="{Binding WavePlotAppearance.CursorPointerColor, Converter={StaticResource BrushToColorConverter}}"/>
                 </Grid>
             </TabItem>
         </TabControl>
