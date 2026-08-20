@@ -30,6 +30,14 @@ namespace JC.Waveform.Core
         public bool Equals(float min, float max) => Min == min && Max == max;
     }
 
+    /// <summary>
+    /// 根據WaveformCore.Build方法的結果，包含了生成的波形點陣列(Points)、實際索引(ActualIndexes)、X軸步長(XStep)以及是否進行了下採樣的資訊(IsDownSampled)。
+    /// 建議使用此結構來存儲和傳遞波形生成的結果，以便在後續的繪製或分析中使用。
+    /// </summary>
+    /// <param name="Points">實際繪製的波形點陣列</param>
+    /// <param name="ActualIndexes">實際索引陣列</param>
+    /// <param name="XStep">X軸步長</param>
+    /// <param name="IsDownSampled">是否進行了下採樣</param>
     public readonly record struct WaveformBuildResult(
     WaveformPoint[] Points,
     int[] ActualIndexes,
@@ -41,6 +49,15 @@ namespace JC.Waveform.Core
     }
     public static class WaveformCore
     {
+        /// <summary>
+        /// 根據參數建置波形點陣列，並返回包含生成結果的WaveformBuildResult結構。
+        /// </summary>
+        /// <param name="values">輸入實際值陣列</param>
+        /// <param name="rect">繪製區域的矩形</param>
+        /// <param name="valueRange">預期實際繪製值的範圍</param>
+        /// <param name="transform">波形變換</param>
+        /// <param name="fixedPointCount">固定點數，如不指定則根據輸入值自動計算</param>
+        /// <returns>包含生成結果的WaveformBuildResult結構</returns>
         public static WaveformBuildResult Build(ReadOnlySpan<float> values,
             in RectangleF rect,
             in ValueRange valueRange,
@@ -154,6 +171,13 @@ namespace JC.Waveform.Core
 
     public static class WaveformCoreExtensions
     {
+        /// <summary>
+        /// 高效地將WaveformPoint陣列轉換為ReadOnlySpan<T>，避免不必要的資料複製。
+        /// 須注意AsPoints指向的還是原始的WaveformPoint陣列，若原始陣列被釋放或修改，AsPoints將會失效。
+        /// </summary>
+        /// <typeparam name="T">目標結構類型</typeparam>
+        /// <param name="pts">WaveformPoint陣列</param>
+        /// <returns>轉換後的ReadOnlySpan<T></returns>
         public static ReadOnlySpan<T> AsPoints<T>(this WaveformPoint[] pts) where T : struct
         {
             return MemoryMarshal.Cast<WaveformPoint, T>(pts);
