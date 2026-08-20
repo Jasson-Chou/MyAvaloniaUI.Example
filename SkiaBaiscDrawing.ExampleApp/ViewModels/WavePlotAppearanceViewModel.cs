@@ -93,7 +93,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             CursorValueTextBackground = new SolidColorBrush(Colors.Black);
             CursorLineBrush = new SolidColorBrush(Colors.Blue);
             CursorPointerColor = new SolidColorBrush(Colors.Red);
-            WaveformLineStrokeWidth = 2.0f;
+            WaveformLineStrokeWidth = 1.0f;
             Background = new SolidColorBrush(Colors.White);
         }
     }
@@ -115,7 +115,7 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
             CursorValueTextBackground = new SolidColorBrush(Colors.White);
             CursorLineBrush = new SolidColorBrush(Colors.LimeGreen);
             CursorPointerColor = new SolidColorBrush(Colors.Red);
-            WaveformLineStrokeWidth = 2.0f;
+            WaveformLineStrokeWidth = 1.0f;
             Background = new SolidColorBrush(Colors.Black);
         }
     }

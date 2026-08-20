@@ -459,9 +459,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         private int _skDrawTimeAxisVersion;
         private SkiaDrawTimeAxis? _skiaDrawTimeAxis;
 
-        //private float _xStep = float.NaN;
-        //private bool _isDownSampling = false;
-
         private System.Drawing.RectangleF _waveformBuildRect = System.Drawing.RectangleF.Empty;
         private WaveformTransform _waveformBuildTransform = WaveformTransform.Identity;
         private ValueRange _waveformBuildValueRange = ValueRange.Zero;
