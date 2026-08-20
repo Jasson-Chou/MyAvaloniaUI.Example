@@ -135,10 +135,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, double>(
                 nameof(SampleRate), double.NaN);
 
-        public static readonly StyledProperty<double> LabelIntervalProperty =
-            AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, double>(
-                nameof(LabelInterval), double.NaN);
-
         public static readonly StyledProperty<double> TickSpacingScaleProperty =
             AvaloniaProperty.Register<SkiaDrawWaveformScopeUsrCtrl, double>(
                 nameof(TickSpacingScale), 1.0);
@@ -152,7 +148,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
         {
             base.OnPropertyChanged(change);
 
-            if (change.Property != SampleRateProperty && change.Property != LabelIntervalProperty && change.Property != TickSpacingScaleProperty)
+            if (change.Property != SampleRateProperty && change.Property != TickSpacingScaleProperty)
                 _skDrawWaveformLineVersion++;
 
             if (change.Property == XOffsetProperty || change.Property == XScaleProperty || change.Property == TickSpacingScaleProperty || change.Property == XAxisLineColorProperty ||
@@ -160,7 +156,8 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 _skDrawTimeAxisVersion++;
 
             if (change.Property == YScaleProperty || change.Property == YOffsetProperty || change.Property == MaxValueProperty || 
-                change.Property == MinValueProperty || change.Property == MaxMinTextForegroundProperty || change.Property == GridLineColorProperty)
+                change.Property == MinValueProperty || change.Property == MaxMinTextForegroundProperty || change.Property == GridLineColorProperty ||
+                change.Property == AxisTitleForegroundProperty)
                 _skDrawGridVersion++;
 
             if (change.Property == XScaleProperty)
@@ -373,12 +370,6 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             set => SetValue(SampleRateProperty, value);
         }
 
-        public double LabelInterval
-        {
-            get => GetValue(LabelIntervalProperty);
-            set => SetValue(LabelIntervalProperty, value);
-        }
-
         public double TickSpacingScale
         {
             get => GetValue(TickSpacingScaleProperty);
@@ -399,7 +390,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
                 WaveformLineColorProperty, WaveformLineStrokeWidthProperty, 
                 XScaleProperty, YScaleProperty, XOffsetProperty, YOffsetProperty,
                 PointCountProperty, 
-                SampleRateProperty, LabelIntervalProperty, TickSpacingScaleProperty, MaxMinTextForegroundProperty,
+                SampleRateProperty, TickSpacingScaleProperty, MaxMinTextForegroundProperty,
                 XAxisLineColorProperty, GridLineColorProperty, XAxisTextColorProperty, AxisTitleForegroundProperty, XAxisTitleProperty, YAxisTitleProperty,
                 CursorLineBrushProperty, CursorValueTextForegroundProperty, CursorValueTextBackgroundProperty, CursorPointerColorProperty, WavePlotBackgroundProperty,
                 ItemsProperty);
@@ -647,7 +638,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
 
                 float tickTextTop = tickBottom + 20.0f;
                 float tickTextMargin = 5.0f;
-                //if (double.IsNormal(SampleRate) && double.IsNormal(LabelInterval) && double.IsNormal(TickSpacing))
+                
                 if (double.IsNormal(TickSpacingScale) && TickSpacingScale != 0.0d)
                 {
                     List<TimeTextTick> timeTextTicks = new List<TimeTextTick>();

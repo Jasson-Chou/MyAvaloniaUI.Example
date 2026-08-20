@@ -13,17 +13,17 @@ namespace SkiaBasicDrawing.ExampleApp.ViewModels
         public WavePlotAppearanceViewModelBase()
         {
             _waveformLineColor = Colors.Red;
-            _maxMinTextForeground = Brushes.Black;
+            _maxMinTextForeground = new SolidColorBrush(Colors.Black);
             _xAxisTitle = "Time (s)";
             _yAxisTitle = "Amplitude";
-            _axisTitleForeground = Brushes.Black;
+            _axisTitleForeground = new SolidColorBrush(Colors.Black);
             _gridLineColor = Colors.LightGray;
             _xAxisLineColor = Colors.Gray;
             _xAxisTextColor = Colors.Black;
-            _cursorValueTextForeground = Brushes.White;
-            _cursorValueTextBackground = Brushes.Black;
-            _cursorLineBrush = Brushes.Blue;
-            _cursorPointerColor = Brushes.Red;
+            _cursorValueTextForeground = new SolidColorBrush(Colors.White);
+            _cursorValueTextBackground = new SolidColorBrush(Colors.Black);
+            _cursorLineBrush = new SolidColorBrush(Colors.Blue);
+            _cursorPointerColor = new SolidColorBrush(Colors.Red);
             _waveformLineStrokeWidth = 2.0f;
             _background = new SolidColorBrush(Colors.White);
         }
