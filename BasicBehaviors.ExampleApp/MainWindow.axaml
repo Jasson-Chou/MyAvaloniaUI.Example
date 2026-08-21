@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="BasicBehaviors.ExampleApp.MainWindow"
+        x:Name="mainWindow"
+        Title="BasicBehaviors.ExampleApp">
+    <StackPanel>
+        <Slider x:Name="mySlider" Minimum="0" Maximum="100" TickFrequency="1.0" Value="0" Width="100"/>
+        <TextBlock Text="{Binding #mySlider.Value, StringFormat=Value:{0:F0}}">
+            <Interaction.Behaviors>
+                <DataTriggerBehavior Binding="{Binding #mySlider.Value}"
+                                     ComparisonCondition="LessThan"
+                                     Value="50">
+                    <ChangePropertyAction PropertyName="Foreground" Value="LightBlue"/>
+                </DataTriggerBehavior>
+                <DataTriggerBehavior Binding="{Binding #mySlider.Value}"
+                                     ComparisonCondition="GreaterThanOrEqual"
+                                     Value="50">
+                    <ChangeAvaloniaPropertyAction TargetProperty="{x:Static TextBlock.ForegroundProperty}" Value="Yellow"/>
+                </DataTriggerBehavior>
+                <DataTriggerBehavior Binding="{Binding #mySlider.Value}"
+                                     ComparisonCondition="GreaterThanOrEqual"
+                                     Value="90">
+                    <ChangePropertyAction PropertyName="Foreground" Value="Red"/>
+                </DataTriggerBehavior>
+            </Interaction.Behaviors>
+        </TextBlock>
+
+        <Slider x:Name="mySlider2" Minimum="0" Maximum="100" TickFrequency="1.0" Value="0" Width="100">
+            <Interaction.Behaviors>
+                <EventTriggerBehavior EventName="ValueChanged">
+                    <CallMethodAction TargetObject="{Binding #mainWindow}"  MethodName="OnValueChange"/>
+                </EventTriggerBehavior>
+            </Interaction.Behaviors>
+        </Slider>
+        <TextBlock x:Name="myTextBlock2" />
+
+    </StackPanel>
+</Window>

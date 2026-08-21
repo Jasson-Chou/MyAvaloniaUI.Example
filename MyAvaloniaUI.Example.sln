@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JC.UnitsTests", "JC.UnitsTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JC.Waveform.CoreTests", "JC.Waveform.CoreTests\JC.Waveform.CoreTests.csproj", "{DCC5566B-B9B9-47CA-B0EC-6AFE0C2FD64C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BasicBehaviors.ExampleApp", "BasicBehaviors.ExampleApp\BasicBehaviors.ExampleApp.csproj", "{8622BADF-CE04-4AEA-8D2B-ED1121162D01}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -81,6 +83,10 @@ Global
 		{DCC5566B-B9B9-47CA-B0EC-6AFE0C2FD64C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DCC5566B-B9B9-47CA-B0EC-6AFE0C2FD64C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DCC5566B-B9B9-47CA-B0EC-6AFE0C2FD64C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8622BADF-CE04-4AEA-8D2B-ED1121162D01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8622BADF-CE04-4AEA-8D2B-ED1121162D01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8622BADF-CE04-4AEA-8D2B-ED1121162D01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8622BADF-CE04-4AEA-8D2B-ED1121162D01}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
