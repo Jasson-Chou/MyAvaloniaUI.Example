@@ -193,7 +193,7 @@ namespace JC.Waveform.Core.Tests
             // max = 0.9 (idx1)、min = -0.9 (idx2)；cLIdx(2) > cHIdx(1)
             // → 走 else 分支：max 先輸出、min 後輸出（依索引先後，保留波形走向）
             float[] values = { 0f, 0.9f, -0.9f, 0f, 0f };
-            var result = WaveformCore.Build(values, new RectangleF(0, 0, 1, 50), Range, WaveformTransform.Identity);
+            var result = WaveformCore.Build(values, new RectangleF(0, 0, 2, 50), Range, WaveformTransform.Identity);
 
             Assert.AreEqual(1, result.ActualIndexes[0]);
             Assert.AreEqual(2, result.ActualIndexes[1]);

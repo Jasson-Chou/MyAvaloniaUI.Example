@@ -9,7 +9,7 @@ namespace JC.Waveform.Core
     float XScale = 1f,
     float YScale = 1f)
     {
-        public static WaveformTransform Identity => new();
+        public static WaveformTransform Identity => new(0f, 0f, 1f, 1f);
 
         public bool Equals(float xOffset, float yOffset, float xScale, float yScale) =>
             XOffset == xOffset && YOffset == yOffset && XScale == xScale && YScale == yScale;
@@ -125,11 +125,13 @@ namespace JC.Waveform.Core
                 {
                     int cLIdx = Math.Min(startIndex + (i * sampleRate), values.Length - 1);
                     int cHIdx = Math.Min(cLIdx + sampleRate - 1, values.Length - 1);
+                    int startSearchIndex = cLIdx;
+                    int endSearchIndex = cHIdx;
 
                     float cLValue = values[cLIdx];
                     float cHValue = values[cHIdx];
 
-                    for (int j = cLIdx; j <= cHIdx; j++)
+                    for (int j = startSearchIndex; j <= endSearchIndex; j++)
                     {
                         if (cLValue > values[j])
                         {
