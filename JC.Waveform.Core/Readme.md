@@ -1,6 +1,6 @@
 # C# Avalonia Skia JC.Waveform.Core
 
-Github:https://github.com/Jasson-Chou/MyAvaloniaUI.Example/tree/master/JC.Waveform.Core
+Github:https://github.com/Jasson-Chou/MyAvaloniaUI.Example/tree/master/JC.Waveform.Core  
 重點摘要: WaveformCore 為純計算的波形建置核心：將原始 float 值陣列依繪製區域、值域與變換參數轉為螢幕座標點陣列，點數過多時自動以 min-max 下採樣，並透過 AsPoints<T> 零複製轉型供 Skia 等繪圖引擎使用。
 
 ## 概述
