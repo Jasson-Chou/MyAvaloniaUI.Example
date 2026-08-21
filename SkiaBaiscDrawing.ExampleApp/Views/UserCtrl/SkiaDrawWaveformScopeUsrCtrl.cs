@@ -170,7 +170,7 @@ namespace SkiaBasicDrawing.ExampleApp.Views.UserCtrl
             else if(change.Property == YScaleProperty)
             {
                 var defaultHeight = DefaultDrawGridMinValueTop - DefaultDrawGridMaxValueTop;
-                MaxYOffset = YScale == 1.0f ? 0.0f : defaultHeight * YScale - defaultHeight; // 計算新的最大 YOffset
+                MaxYOffset = Math.Max(0.0f, defaultHeight * YScale - defaultHeight); // 確保 MaxYOffset 不為負數
                 CoerceValue(YOffsetProperty); // 重新計算 YOffset 的值，確保它在新的範圍內 [呼叫'coerce']
             }
             else if(change.Property == ItemsProperty)
