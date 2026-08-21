@@ -66,6 +66,9 @@ namespace JC.Waveform.Core
         {
             if(values.Length == 0)
                 return WaveformBuildResult.Empty;
+            if(transform.XScale == 0 || transform.YScale == 0)
+                throw new ArgumentException("XScale and YScale must be non-zero.", nameof(transform));
+
             WaveformPoint[] waveformPoints = Array.Empty<WaveformPoint>();
             int[] actualIndexes = Array.Empty<int>();
             float xStep = 0f;
